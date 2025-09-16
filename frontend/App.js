@@ -1,0 +1,61 @@
+import './global.css'; // Make sure this is imported
+import { Text, View, ScrollView } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import signupScreen from './UserScreens/signupScreen';
+import onboardingScreen from './components/onboardingScreen';
+import loginScreen from './UserScreens/loginScreen';
+import ProfileScreen from './UserScreens/ProfileScreen';
+import OnboardingScreens from './components/OnboardingScreen1';
+
+const Stack = createNativeStackNavigator();
+
+export default function App() {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator 
+        initialRouteName="onboardingScreen"
+        // screenOptions={{
+        //   headerStyle: {
+        //     backgroundColor: '#f59e0b',
+        //   },
+        //   headerTintColor: '#fff',
+        //   headerTitleStyle: {
+        //     fontWeight: 'bold',
+        //   },
+        // }}
+      >
+        <Stack.Screen 
+          name="signupScreen" 
+          component={signupScreen}
+          options={{ headerShown: false }}
+        />
+
+         <Stack.Screen 
+          name="onboardingScreen" 
+          component={onboardingScreen}
+          options={{ headerShown: false }}
+        />
+         <Stack.Screen 
+          name="OnboardingScreens" 
+          component={OnboardingScreens}
+          options={{ headerShown: false }}
+        />
+
+          <Stack.Screen 
+          name="loginScreen" 
+          component={loginScreen}
+          options={{ headerShown: false }}
+        />
+
+          <Stack.Screen 
+          name="ProfileScreen" 
+          component={ProfileScreen}
+          options={{ headerShown: false }}
+        />
+
+        
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}

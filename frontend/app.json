@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "owner": "greenrent",
+    "name": "GreenRent",
+    "slug": "greenrent",
+    "version": "1.0.0",
+    "scheme": "greenrent",
+    "platforms": ["ios", "android", "web"],
+    
+    "experiments": { "tsconfigPaths": true },
+
+    "plugins": ["expo-web-browser"],
+
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+
+    "assetBundlePatterns": ["**/*"],
+
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.frontend"
+    },
+
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.anonymous.frontend"
+    },
+
+    "web": { "favicon": "./assets/favicon.png" }
+
+  }
+}
