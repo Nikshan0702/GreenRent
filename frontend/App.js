@@ -7,6 +7,11 @@ import onboardingScreen from './components/onboardingScreen';
 import loginScreen from './UserScreens/loginScreen';
 import ProfileScreen from './UserScreens/ProfileScreen';
 import OnboardingScreens from './components/OnboardingScreen1';
+import AddProperty from './Property/AddProperty';
+import Home from './screens/Home';
+import PropertyDetailsScreen from './Property/PropertyDetailsScreen';
+import PropertyList from './Property/PropertyList';
+
 
 const Stack = createNativeStackNavigator();
 
@@ -51,6 +56,30 @@ export default function App() {
           <Stack.Screen 
           name="ProfileScreen" 
           component={ProfileScreen}
+          options={{ headerShown: false }}
+        />
+
+          <Stack.Screen 
+          name="AddProperty" 
+          component={AddProperty}
+          options={{ headerShown: false }}
+        />
+
+          <Stack.Screen 
+          name="Home" 
+          component={Home}
+          options={{ headerShown: false }}
+        />
+
+          <Stack.Screen 
+          name="PropertyDetailsScreen" 
+          component={PropertyDetailsScreen}
+          options={{ headerShown: false }}
+        />
+
+           <Stack.Screen 
+          name="PropertyList" 
+          component={PropertyList}
           options={{ headerShown: false }}
         />
 

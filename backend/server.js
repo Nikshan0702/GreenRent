@@ -1,58 +1,60 @@
-import express from "express";
-import cors from "cors";
-import mongoose from "mongoose";
-import dotenv from "dotenv"; 
-import UserOperations from "./controller/UserOperations.js";
+// import express from "express";
+// import cors from "cors";
+// import mongoose from "mongoose";
+// import dotenv from "dotenv"; 
+// import UserOperations from "./controller/UserOperations.js";
+// import PropertyOperations from "./controller/PropertyOperations.js";
 
 
-dotenv.config();
+// dotenv.config();
 
-const app = express();
-
-
-app.use(cors({
-  origin: [
-    'http://localhost:4000',
-    'http://localhost:19006',
-    'exp://172.28.18.69:8081',
-    'exp://172.28.20.31:8081',
-    'https://auth.expo.dev'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
-
-app.use(express.json()); 
+// const app = express();
 
 
-app.use("/UserOperations", UserOperations);
+// app.use(cors({
+//   origin: [
+//     'http://localhost:4000',
+//     'http://localhost:19006',
+//     'exp://172.28.18.69:8081',
+//     'exp://172.28.20.31:8081',
+//     'https://auth.expo.dev'
+//   ],
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization'],
+//   credentials: true
+// }));
+
+// app.use(express.json()); 
+
+
+// app.use("/UserOperations", UserOperations);
+// app.use("/PropertyOperations", PropertyOperations);
 
 
 
-app.listen(4000, '0.0.0.0', () => console.log('API on :4000'));
+// app.listen(4000, '0.0.0.0', () => console.log('API on :4000'));
 
 
-const connectDB = async () => {
-  try {
-    console.log('Connecting to MongoDB with URI:', process.env.DB_URI);
-    await mongoose.connect(process.env.DB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log("MongoDB connected successfully");
-  } catch (err) {
-    console.error("MongoDB connection error:", err);
-    process.exit(1);
-  }
-};
+// const connectDB = async () => {
+//   try {
+//     console.log('Connecting to MongoDB with URI:', process.env.DB_URI);
+//     await mongoose.connect(process.env.DB_URI, {
+//       useNewUrlParser: true,
+//       useUnifiedTopology: true,
+//     });
+//     console.log("MongoDB connected successfully");
+//   } catch (err) {
+//     console.error("MongoDB connection error:", err);
+//     process.exit(1);
+//   }
+// };
 
-connectDB().then(() => {
-  const PORT = process.env.PORT || 4000;
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-});
+// connectDB().then(() => {
+//   const PORT = process.env.PORT || 4000;
+//   app.listen(PORT, () => {
+//     console.log(`Server running on port ${PORT}`);
+//   });
+// });
 
 
 
@@ -92,3 +94,70 @@ connectDB().then(() => {
 
 // const PORT = process.env.PORT || 4000;
 // app.listen(PORT, '0.0.0.0', () => console.log(`API on :${PORT}`));
+
+
+
+
+
+
+
+
+// server.js
+import express from "express";
+import cors from "cors";
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import UserOperations from "./controller/UserOperations.js";
+import PropertyOperations from "./controller/PropertyOperations.js";
+
+
+
+dotenv.config();
+
+const app = express();
+
+// ---- CORS ----
+// React Native fetch usually doesn’t send an Origin header, but allow all for simplicity.
+// If you prefer strict origins, add them to the array.
+app.use(cors({ origin: true, credentials: true }));
+
+// ---- Body parsing ----
+app.use(express.json());
+
+// ---- Health check ----
+app.get("/health", (_req, res) => {
+  res.json({ ok: true });
+});
+
+// ---- Routes ----
+app.use("/UserOperations", UserOperations);
+app.use("/PropertyOperations", PropertyOperations);
+
+// ---- DB + start server (listen ONCE) ----
+const PORT = process.env.PORT || 4000;
+
+async function start() {
+  try {
+    const uri = process.env.DB_URI;
+    if (!uri) {
+      console.error("Missing DB_URI in environment");
+      process.exit(1);
+    }
+
+    console.log("Connecting to MongoDB:", uri);
+    await mongoose.connect(uri, {
+      // Mongoose v6+ doesn’t need useNewUrlParser/useUnifiedTopology flags
+    });
+    console.log("MongoDB connected");
+
+    // Bind to all interfaces so Android emulator (10.0.2.2) can reach it
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`API listening on http://0.0.0.0:${PORT}`);
+    });
+  } catch (err) {
+    console.error("Startup failed:", err);
+    process.exit(1);
+  }
+}
+
+start();

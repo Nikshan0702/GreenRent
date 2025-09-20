@@ -1,19 +1,4 @@
-// import mongoose from "mongoose";
 
-// const UserSchema = new mongoose.Schema({
-//     uname: String,
-//     email: String,
-//     address: String,
-//     number: String,
-//     password: String,
-
-// });
-
-
-
-// const UserModel = mongoose.model("GreenRentUser", UserSchema);
-
-// export default UserModel;
 import mongoose from "mongoose";
 
 const UserSchema = new mongoose.Schema({

@@ -26,7 +26,7 @@ export default function RegisterScreen({ navigation }) {
       console.log('Google User Info:', userInfo);
 
       // Send idToken to your backend for registration
-      const response = await fetch('http://172.28.7.1114000/UserOperations/google-auth', {
+      const response = await fetch('http://10.0.2.2:4000/UserOperations/google-auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken: userInfo.idToken }),
@@ -85,7 +85,7 @@ export default function RegisterScreen({ navigation }) {
     
     try {
         console.log('Attempting to register with:', formData);
-        const response = await axios.post('http://172.28.7.111:4000/UserOperations/register', 
+        const response = await axios.post('http://10.0.2.2:4000/UserOperations/register', 
             formData,
             {
                 headers: {

@@ -1,160 +1,3 @@
-// import {
-//     KeyboardAvoidingView,
-//     Platform,
-//     TextInput,
-//     TouchableOpacity,
-//     ActivityIndicator,
-//     View,
-//     Image,
-//     Text
-//   } from 'react-native';
-//   import { StatusBar } from 'expo-status-bar';
-//   import { useState,useEffect } from 'react';
-//   import { configureGoogle, googleSignIn } from '../Auth/googleAuth.js';
-  
-//   const LoginScreen = ({ navigation }) => {
-//     const [email, setEmail] = useState('');
-//     const [password, setPassword] = useState('');
-//     const [isLoading, setIsLoading] = useState(false);
-//     const [error, setError] = useState('');
-
-
-//     useEffect(() => { configureGoogle(); }, []);
-//     const handleLogin = () => {
-//       // Login logic
-//     };
-  
-//     const handleGoogleSignIn = async () => {
-//       try {
-//         const userInfo = await googleSignIn();
-//         console.log('Google User Info:', userInfo);
-  
-//         // Send the idToken to your backend to register/login the user
-//         await fetch('http://172.28.18.69:4000/UserOperations/google-auth', {
-//           method: 'POST',
-//           headers: { 'Content-Type': 'application/json' },
-//           body: JSON.stringify({ idToken: userInfo.idToken }),
-//         });
-//       } catch (error) {
-//         console.error('Google sign-in error:', error);
-//       }
-//     };
-  
-  
-//     return (
-//       <KeyboardAvoidingView
-//         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-//         className="flex-1 bg-white"
-//       >
-//         <StatusBar style="dark" />
-  
-//         <View className="flex-1 justify-center items-center px-6">
-//           {/* Logo */}
-//           <Image
-//             source={require('../GreenAssets/1.png')}
-//             className="w-48 h-48 mb-6"
-//             resizeMode="contain"
-//           />
-  
-//           {/* Title */}
-//           <Text className="text-[#3cc172] text-3xl font-bold mb-6 text-center">
-//             Welcome Back
-//           </Text>
-  
-//           {/* Error Message */}
-//           {error ? (
-//             <View className="bg-red-100 p-3 rounded-lg mb-6 w-full">
-//               <Text className="text-red-700 text-center">{error}</Text>
-//             </View>
-//           ) : null}
-  
-//           {/* Email Input */}
-//           <View className="w-full mb-4">
-//             <Text className="text-gray-700 text-sm font-semibold mb-2">
-//               Email Address
-//             </Text>
-//             <TextInput
-//               className="bg-gray-50 rounded-xl p-4 text-base text-gray-900 border border-gray-200 focus:border-[#3cc172]"
-//               placeholder="Enter your email"
-//               placeholderTextColor="#9ca3af"
-//               value={email}
-//               onChangeText={setEmail}
-//               keyboardType="email-address"
-//               autoCapitalize="none"
-//             />
-//           </View>
-  
-//           {/* Password Input */}
-//           <View className="w-full mb-4">
-//             <Text className="text-gray-700 text-sm font-semibold mb-2">
-//               Password
-//             </Text>
-//             <TextInput
-//               className="bg-gray-50 rounded-xl p-4 text-base text-gray-900 border border-gray-200 focus:border-[#3cc172]"
-//               placeholder="Enter your password"
-//               placeholderTextColor="#9ca3af"
-//               value={password}
-//               onChangeText={setPassword}
-//               secureTextEntry
-//             />
-//           </View>
-  
-//           {/* Forgot Password */}
-//           <TouchableOpacity className="self-end mb-6">
-//             <Text className="text-[#3cc172] font-medium">Forgot Password?</Text>
-//           </TouchableOpacity>
-//         </View>
-  
-//         {/* Footer */}
-//         <View className="p-6 bg-white border-t border-gray-100">
-//           {/* Login Button */}
-//           <TouchableOpacity
-//             onPress={handleLogin}
-//             className="bg-[#3cc172] py-4 rounded-xl items-center mb-4"
-//             disabled={isLoading}
-//           >
-//             {isLoading ? (
-//               <ActivityIndicator color="white" />
-//             ) : (
-//               <Text className="text-white font-bold text-lg">Login</Text>
-//             )}
-//           </TouchableOpacity>
-  
-//           {/* Divider */}
-//           <View className="flex-row items-center my-4">
-//             <View className="flex-1 h-px bg-gray-200" />
-//             <Text className="w-10 text-center text-gray-500 text-sm">OR</Text>
-//             <View className="flex-1 h-px bg-gray-200" />
-//           </View>
-  
-//           {/* Google Login */}
-//           <TouchableOpacity
-//             className="bg-white py-4 rounded-xl items-center mb-4 border border-gray-200"
-//             onPress={() => handleGoogleSignIn()}
-//             disabled={isLoading}
-//           >
-//             <Text className="text-gray-700 font-bold text-base">
-//               Sign in with Google
-//             </Text>
-//           </TouchableOpacity>
-  
-//           {/* Sign Up Link */}
-//           <View className="flex-row justify-center items-center">
-//             <Text className="text-gray-500 text-sm">Don't have an account? </Text>
-//             <TouchableOpacity onPress={() => navigation.navigate('signupScreen')}>
-//               <Text className="text-[#3cc172] font-semibold text-sm">Sign up</Text>
-//             </TouchableOpacity>
-//           </View>
-//         </View>
-//       </KeyboardAvoidingView>
-//     );
-//   };
-  
-//   export default LoginScreen;
-  
-
-
-
 import {
   KeyboardAvoidingView,
   Platform,
@@ -172,7 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { configureGoogle, googleSignIn } from '../Auth/googleAuth.js';
 
 // ---- CONFIG: update this once in one place ----
-const API_BASE = 'http://172.28.7.111:4000';
+const API_BASE = 'http://10.0.2.2:4000';
 const LOGIN_URL = `${API_BASE}/UserOperations/login`;
 const GOOGLE_AUTH_URL = `${API_BASE}/UserOperations/google-auth`;
 
@@ -239,7 +82,7 @@ const LoginScreen = ({ navigation }) => {
       ]);
 
       // Optional: navigate to your app’s home screen
-      navigation.replace('ProfileScreen'); // change to your actual route
+      navigation.replace('Home'); // change to your actual route
     } catch (e) {
       showError('Network error. Check that your phone and server are on the same LAN.');
     } finally {
