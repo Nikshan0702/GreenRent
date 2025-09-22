@@ -681,7 +681,7 @@ const ProfileScreen = () => {
               <View className="flex-row flex-wrap justify-between">
                 <TouchableOpacity
                   className="flex-row items-center bg-gray-50 py-4 px-4 rounded-xl mb-3 w-[48%]"
-                  onPress={() => navigation.navigate('MyApartments')}
+                  onPress={() => navigation.navigate('Myproperties')}
                 >
                   <Ionicons name="business" size={20} color={GREEN} />
                   <Text className="text-gray-700 font-medium ml-2 text-sm">
@@ -701,7 +701,7 @@ const ProfileScreen = () => {
 
                 <TouchableOpacity
                   className="flex-row items-center bg-gray-50 py-4 px-4 rounded-xl w-[48%]"
-                  onPress={() => navigation.navigate('EcoTips')}
+                  onPress={() => navigation.navigate('EcoTipsScreen')}
                 >
                   <Ionicons name="bulb" size={20} color={GREEN} />
                   <Text className="text-gray-700 font-medium ml-2 text-sm">

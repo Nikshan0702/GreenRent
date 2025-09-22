@@ -721,6 +721,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
 import UserModel from '../Models/User.js';
+import authenticateUser from '../middleware/authenticateUser.js';
 
 const router = express.Router();
 
@@ -763,31 +764,31 @@ router.use((req, _res, next) => {
 });
 
 // --- Auth middleware (uses the SAME secret) ---
-const authenticateUser = async (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
-      return res.status(401).json({ success: false, message: 'Authorization token required' });
-    }
+// const authenticateUser = async (req, res, next) => {
+//   try {
+//     const authHeader = req.headers.authorization;
+//     if (!authHeader?.startsWith('Bearer ')) {
+//       return res.status(401).json({ success: false, message: 'Authorization token required' });
+//     }
 
-    const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, JWT_SECRET_KEY);
+//     const token = authHeader.split(' ')[1];
+//     const decoded = jwt.verify(token, JWT_SECRET_KEY);
 
-    const user = await UserModel.findById(decoded.userId);
-    if (!user) {
-      return res.status(401).json({ success: false, message: 'User not found' });
-    }
+//     const user = await UserModel.findById(decoded.userId);
+//     if (!user) {
+//       return res.status(401).json({ success: false, message: 'User not found' });
+//     }
 
-    req.user = user;
-    next();
-  } catch (err) {
-    console.error('Authentication error:', err);
-    const message =
-      err.name === 'TokenExpiredError' ? 'Token expired' :
-      err.name === 'JsonWebTokenError' ? 'Invalid token' : 'Invalid token';
-    res.status(401).json({ success: false, message });
-  }
-};
+//     req.user = user;
+//     next();
+//   } catch (err) {
+//     console.error('Authentication error:', err);
+//     const message =
+//       err.name === 'TokenExpiredError' ? 'Token expired' :
+//       err.name === 'JsonWebTokenError' ? 'Invalid token' : 'Invalid token';
+//     res.status(401).json({ success: false, message });
+//   }
+// };
 
 // --- Register ---
 router.post("/register", async (req, res) => {
@@ -850,30 +851,110 @@ router.post("/register", async (req, res) => {
 });
 
 // --- Login ---
+// router.post('/login', async (req, res) => {
+//   try {
+//     const { email, password } = req.body || {};
+//     if (!email || !password) {
+//       return res.status(400).json({ success: false, message: 'Email and password are required' });
+//     }
+
+//     const user = await UserModel.findOne({ email: email.toLowerCase() });
+//     if (!user) return res.status(401).json({ success: false, message: 'Invalid email or password' });
+
+//     if (user.isGoogleAuth) {
+//       return res.status(401).json({ success: false, message: 'Please use Google Sign-In for this account' });
+//     }
+
+//     const ok = await bcrypt.compare(password, user.password);
+//     if (!ok) return res.status(401).json({ success: false, message: 'Invalid email or password' });
+
+//     const token = signAppJwt(user);
+//     res.status(200).json({ success: true, message: 'Login successful', data: { user: user.toJSON(), token } });
+//   } catch (error) {
+//     console.error('Login error:', error);
+//     res.status(500).json({ success: false, message: 'Login failed. Please try again.' });
+//   }
+// });
+
+
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body || {};
+    const { email = '', password = '' } = req.body || {};
     if (!email || !password) {
       return res.status(400).json({ success: false, message: 'Email and password are required' });
     }
 
-    const user = await UserModel.findOne({ email: email.toLowerCase() });
-    if (!user) return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    // normalize email
+    const emailNorm = String(email).trim().toLowerCase();
 
-    if (user.isGoogleAuth) {
-      return res.status(401).json({ success: false, message: 'Please use Google Sign-In for this account' });
+    // find user (case-insensitive)
+    const user = await UserModel.findOne({ email: new RegExp(`^${emailNorm}$`, 'i') }).lean();
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    const ok = await bcrypt.compare(password, user.password);
-    if (!ok) return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    // Determine password hash field (support a few common names)
+    const hash =
+      user.passwordHash ||
+      user.password ||            // NOTE: if this is a bcrypt hash, compare will work; if plain text, we handle fallback below.
+      user.passHash ||
+      '';
 
-    const token = signAppJwt(user);
-    res.status(200).json({ success: true, message: 'Login successful', data: { user: user.toJSON(), token } });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ success: false, message: 'Login failed. Please try again.' });
+    let passwordOK = false;
+
+    // First try bcrypt (expected)
+    if (hash) {
+      try {
+        passwordOK = await bcrypt.compare(password, hash);
+      } catch {
+        passwordOK = false;
+      }
+    }
+
+    // TEMP fallback: if your DB still has plain text password stored in `password`,
+    // allow equality (remove this once all users are migrated to bcrypt).
+    if (!passwordOK && typeof user.password === 'string' && user.password.length > 0) {
+      if (user.password === password) {
+        passwordOK = true;
+      }
+    }
+
+    if (!passwordOK) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+
+    // sign JWT
+    const secret = process.env.JWT_SECRET_KEY;
+    if (!secret) {
+      console.error('[Auth] Missing JWT_SECRET_KEY');
+      return res.status(500).json({ success: false, message: 'Server misconfigured' });
+    }
+
+    const token = jwt.sign(
+      {
+        userId: user._id,
+        role: user.isAdmin ? 'admin' : 'user',
+      },
+      secret,
+      { algorithm: 'HS256', expiresIn: '7d' }
+    );
+
+    // shape user object for client
+    const safeUser = {
+      _id: user._id,
+      email: user.email,
+      uname: user.uname,
+      isAdmin: !!user.isAdmin,
+    };
+
+    return res.json({ success: true, data: { token, user: safeUser } });
+  } catch (err) {
+    console.error('[Auth/login] error:', err);
+    return res.status(500).json({ success: false, message: 'Login failed' });
   }
 });
+
+
 
 // --- Google Auth ---
 router.post('/google-auth', async (req, res) => {

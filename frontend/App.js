@@ -9,8 +9,13 @@ import ProfileScreen from './UserScreens/ProfileScreen';
 import OnboardingScreens from './components/OnboardingScreen1';
 import AddProperty from './Property/AddProperty';
 import Home from './screens/Home';
-import PropertyDetailsScreen from './Property/PropertyDetailsScreen';
+// import PropertyDetailsScreen from './Property/PropertyDetailsScreen';
 import PropertyList from './Property/PropertyList';
+import Myproperties from './Property/Myproperties';
+import AppTipsScreen from './screens/AppTipsScreen';
+import EcoTipsScreen from './screens/ecoTips';
+
+import AddCertificate from './Property/AddCertificate';
 
 
 const Stack = createNativeStackNavigator();
@@ -71,18 +76,40 @@ export default function App() {
           options={{ headerShown: false }}
         />
 
-          <Stack.Screen 
+          {/* <Stack.Screen 
           name="PropertyDetailsScreen" 
           component={PropertyDetailsScreen}
           options={{ headerShown: false }}
-        />
+        /> */}
 
            <Stack.Screen 
           name="PropertyList" 
           component={PropertyList}
           options={{ headerShown: false }}
         />
+           <Stack.Screen 
+          name="Myproperties" 
+          component={Myproperties}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+          name="AppTipsScreen" 
+          component={AppTipsScreen}
+          options={{ headerShown: false }}
+        />
+        
+        <Stack.Screen 
+          name="EcoTipsScreen" 
+          component={EcoTipsScreen}
+          options={{ headerShown: false }}
+        />
 
+
+         <Stack.Screen 
+          name="AddCertificate" 
+          component={AddCertificate}
+          options={{ headerShown: false }}
+        />
         
       </Stack.Navigator>
     </NavigationContainer>

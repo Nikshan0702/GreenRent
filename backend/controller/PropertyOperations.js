@@ -295,34 +295,35 @@ import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import PropertyModel from "../Models/Property.js";
 import UserModel from "../Models/User.js";
+import authenticateUser from "../middleware/authenticateUser.js";
 
 const router = express.Router();
 const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY || "dev-secret";
 
 // --- Auth middleware ---
-const authenticateUser = async (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
-      return res.status(401).json({ success: false, message: 'Authorization token required' });
-    }
-    const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, JWT_SECRET_KEY);
+// const authenticateUser = async (req, res, next) => {
+//   try {
+//     const authHeader = req.headers.authorization;
+//     if (!authHeader?.startsWith('Bearer ')) {
+//       return res.status(401).json({ success: false, message: 'Authorization token required' });
+//     }
+//     const token = authHeader.split(' ')[1];
+//     const decoded = jwt.verify(token, JWT_SECRET_KEY);
 
-    const user = await UserModel.findById(decoded.userId);
-    if (!user) {
-      return res.status(401).json({ success: false, message: 'User not found' });
-    }
-    req.user = user;
-    next();
-  } catch (err) {
-    console.error('Authentication error:', err);
-    const message =
-      err.name === 'TokenExpiredError' ? 'Token expired' :
-      err.name === 'JsonWebTokenError' ? 'Invalid token' : 'Invalid token';
-    res.status(401).json({ success: false, message });
-  }
-};
+//     const user = await UserModel.findById(decoded.userId);
+//     if (!user) {
+//       return res.status(401).json({ success: false, message: 'User not found' });
+//     }
+//     req.user = user;
+//     next();
+//   } catch (err) {
+//     console.error('Authentication error:', err);
+//     const message =
+//       err.name === 'TokenExpiredError' ? 'Token expired' :
+//       err.name === 'JsonWebTokenError' ? 'Invalid token' : 'Invalid token';
+//     res.status(401).json({ success: false, message });
+//   }
+// };
 
 // --- Multer setup (images only) ---
 const uploadDir = "uploads/properties/";

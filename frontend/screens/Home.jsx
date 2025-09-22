@@ -325,7 +325,7 @@ export default function Home() {
           className="flex-row items-center py-4 border-b border-gray-100"
           onPress={() => {
             toggleSidebar();
-            navigation.navigate('EcoTips');
+            navigation.navigate('EcoTipsScreen');
           }}
         >
           <Ionicons name="leaf" size={20} color={GREEN} />
@@ -426,11 +426,11 @@ export default function Home() {
 
           <TouchableOpacity
             className="flex-row items-center bg-gray-50 py-4 px-4 rounded-2xl mb-3 w-[48%] border border-gray-200"
-            onPress={() => navigation.navigate('EcoTips')}
+            onPress={() => navigation.navigate('AppTipsScreen')}
             activeOpacity={0.9}
           >
-            <Ionicons name="leaf" size={22} color={GREEN} />
-            <Text className="ml-2 text-[15px] font-semibold text-gray-900">Eco Tips</Text>
+           <Ionicons name="bulb-outline" size={22} color={GREEN} />
+            <Text className="ml-2 text-[15px] font-semibold text-gray-900">App Tips</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
