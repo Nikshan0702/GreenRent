@@ -16,6 +16,7 @@ import AppTipsScreen from './screens/AppTipsScreen';
 import EcoTipsScreen from './screens/ecoTips';
 
 import AddCertificate from './Property/AddCertificate';
+import PropertyDetail from './Property/PropertyDetail';
 
 
 const Stack = createNativeStackNavigator();
@@ -108,6 +109,11 @@ export default function App() {
          <Stack.Screen 
           name="AddCertificate" 
           component={AddCertificate}
+          options={{ headerShown: false }}
+        />
+         <Stack.Screen 
+          name="PropertyDetail" 
+          component={PropertyDetail}
           options={{ headerShown: false }}
         />
         

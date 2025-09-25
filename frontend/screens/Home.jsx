@@ -420,8 +420,8 @@ export default function Home() {
             onPress={() => navigation.navigate('AddProperty')}
             activeOpacity={0.9}
           >
-            <Ionicons name="pricetag" size={22} color={GREEN} />
-            <Text className="ml-2 text-[15px] font-semibold text-gray-900">Sell</Text>
+            <Ionicons name="business-outline" size={22} color={GREEN} />
+            <Text className="ml-2 text-[15px] font-semibold text-gray-900">Near</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
