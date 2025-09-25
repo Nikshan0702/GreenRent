@@ -17,6 +17,7 @@ import EcoTipsScreen from './screens/ecoTips';
 
 import AddCertificate from './Property/AddCertificate';
 import PropertyDetail from './Property/PropertyDetail';
+import SuggestApartments from './Property/SuggestApartments';
 
 
 const Stack = createNativeStackNavigator();
@@ -114,6 +115,12 @@ export default function App() {
          <Stack.Screen 
           name="PropertyDetail" 
           component={PropertyDetail}
+          options={{ headerShown: false }}
+        />
+
+          <Stack.Screen 
+          name="SuggestApartments" 
+          component={SuggestApartments}
           options={{ headerShown: false }}
         />
         

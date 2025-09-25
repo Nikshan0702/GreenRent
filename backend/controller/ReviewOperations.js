@@ -1,10 +1,35 @@
-// // controller/PropertyCommentsController.js
+// // controller/ReviewOperations.js
 // import express from "express";
 // import mongoose from "mongoose";
 // import Review from "../Models/Review.js";
 // import authenticateUser from "../middleware/authenticateUser.js";
 
-// const router = express.Router();
+
+// async function analyzeSentiment(text) {
+//   try {
+//     const apiKey = process.env.PARALLELDOTS_KEY;
+//     if (!apiKey) return { provider: "None", label: "neutral", confidence: 0, score: 0 };
+
+//     const body = new URLSearchParams({ text, api_key: apiKey });
+//     const res = await doFetch("https://apis.paralleldots.com/v4/sentiment", {
+//       method: "POST",
+//       headers: { "Content-Type": "application/x-www-form-urlencoded" },
+//       body,
+//     });
+//     const data = await res.json();
+
+//     // ParallelDots returns something like:
+//     // { sentiment: "positive"|"neutral"|"negative", confidence_score: 0.87, sentiment_score?: number }
+//     const label = ["positive", "neutral", "negative"].includes(data?.sentiment) ? data.sentiment : "neutral";
+//     const confidence = typeof data?.confidence_score === "number" ? data.confidence_score : 0;
+//     const score = typeof data?.sentiment_score === "number" ? data.sentiment_score : undefined;
+
+//     return { provider: "ParallelDots", label, confidence, score };
+//   } catch (e) {
+//     console.error("Sentiment error:", e);
+//     return { provider: "None", label: "neutral", confidence: 0, score: 0 };
+//   }
+// }
 
 // /** helper: recompute property aggregates (avgRating, reviewCount) */
 // async function recomputePropertyAggregates(propertyId) {
@@ -27,19 +52,19 @@
 //   );
 // }
 
-// /** ---------- GET /PropertyOperations/:propertyId/comments (Public) ---------- */
+// const router = express.Router();
+
+// /** ---------- GET /ReviewOperations/:propertyId/comments (Public) ---------- */
 // router.get("/:propertyId/comments", async (req, res) => {
 //   try {
 //     const { propertyId } = req.params;
 //     if (!mongoose.Types.ObjectId.isValid(propertyId)) {
 //       return res.status(400).json({ success: false, message: "Invalid propertyId" });
 //     }
-
 //     const items = await Review.find({ propertyId })
 //       .sort({ createdAt: -1 })
 //       .populate({ path: "userId", select: "uname profilePicture" })
 //       .lean();
-
 //     return res.json({ success: true, data: items });
 //   } catch (e) {
 //     console.error("listComments error:", e);
@@ -47,7 +72,7 @@
 //   }
 // });
 
-// /** ---------- POST /PropertyOperations/:propertyId/comments (Auth) ---------- */
+// /** ---------- POST /ReviewOperations/:propertyId/comments (Auth) ---------- */
 // router.post("/:propertyId/comments", authenticateUser, async (req, res) => {
 //   try {
 //     const { propertyId } = req.params;
@@ -64,15 +89,25 @@
 //       return res.status(400).json({ success: false, message: "Rating must be between 1 and 5" });
 //     }
 
-//     // Upsert: if user already reviewed this property, update it; else create new
+//     const s = await analyzeSentiment(String(text));
+
 //     const doc = await Review.findOneAndUpdate(
 //       { propertyId, userId: req.user._id },
-//       { $set: { text, rating: r }, $setOnInsert: { createdAt: new Date() } },
+//       {
+//         $set: {
+//           text,
+//           rating: r,
+//           "sentiment.provider": s.provider,
+//           "sentiment.label": s.label,
+//           "sentiment.confidence": s.confidence,
+//           ...(s.score !== undefined ? { "sentiment.score": s.score } : {}),
+//         },
+//         $setOnInsert: { createdAt: new Date() },
+//       },
 //       { upsert: true, new: true, runValidators: true }
 //     );
 
 //     await recomputePropertyAggregates(propertyId);
-
 //     return res.status(201).json({ success: true, data: doc });
 //   } catch (e) {
 //     console.error("addComment error:", e);
@@ -83,7 +118,7 @@
 //   }
 // });
 
-// /** ---------- PUT /PropertyOperations/:propertyId/comments/:id (Auth) ---------- */
+// /** ---------- PUT /ReviewOperations/:propertyId/comments/:id (Auth) ---------- */
 // router.put("/:propertyId/comments/:id", authenticateUser, async (req, res) => {
 //   try {
 //     const { propertyId, id } = req.params;
@@ -94,7 +129,14 @@
 //     }
 
 //     const update = {};
-//     if (typeof text === "string") update.text = text;
+//     if (typeof text === "string" && text.trim()) {
+//       update.text = text.trim();
+//       const s = await analyzeSentiment(update.text);
+//       update["sentiment.provider"] = s.provider;
+//       update["sentiment.label"] = s.label;
+//       update["sentiment.confidence"] = s.confidence;
+//       if (s.score !== undefined) update["sentiment.score"] = s.score;
+//     }
 //     if (rating !== undefined) {
 //       const r = Number(rating);
 //       if (Number.isNaN(r) || r < 1 || r > 5) {
@@ -106,7 +148,7 @@
 //     update.editedAt = new Date();
 
 //     const doc = await Review.findOneAndUpdate(
-//       { _id: id, propertyId, userId: req.user._id }, // only the author can edit
+//       { _id: id, propertyId, userId: req.user._id },
 //       { $set: update },
 //       { new: true, runValidators: true }
 //     );
@@ -121,7 +163,7 @@
 //   }
 // });
 
-// /** ---------- DELETE /PropertyOperations/:propertyId/comments/:id (Auth) ---------- */
+// /** ---------- DELETE /ReviewOperations/:propertyId/comments/:id (Auth) ---------- */
 // router.delete("/:propertyId/comments/:id", authenticateUser, async (req, res) => {
 //   try {
 //     const { propertyId, id } = req.params;
@@ -144,38 +186,61 @@
 // export default router;
 
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 // controller/ReviewOperations.js
 import express from "express";
 import mongoose from "mongoose";
 import Review from "../Models/Review.js";
 import authenticateUser from "../middleware/authenticateUser.js";
+import { LanguageServiceClient } from "@google-cloud/language";
 
-// Use global fetch (Node 18+) or polyfill if needed
-// const doFetch = (...args) => (globalThis.fetch ? fetch(...args) : (await import("node-fetch")).default(...args));
+const gnlClient = new LanguageServiceClient();
 
+
+const { ObjectId } = mongoose.Types;
+
+// Lazy import to avoid circular deps on cold start
+async function getPropertyModel() {
+  const { default: PropertyModel } = await import("../Models/Property.js");
+  return PropertyModel;
+}
+
+
+/**
+ * Use Google Cloud Natural Language to analyze sentiment.
+ * Maps to your schema: { provider, label, confidence, score }
+ * - score: -1..+1 (negative..positive)
+ * - confidence: we use "magnitude" as a confidence proxy (>= 0)
+ */
 async function analyzeSentiment(text) {
   try {
-    const apiKey = process.env.PARALLELDOTS_KEY;
-    if (!apiKey) return { provider: "None", label: "neutral", confidence: 0, score: 0 };
+    const content = String(text || "").trim();
+    if (!content) {
+      return { provider: "GoogleNL", label: "neutral", confidence: 0, score: 0 };
+    }
 
-    const body = new URLSearchParams({ text, api_key: apiKey });
-    const res = await doFetch("https://apis.paralleldots.com/v4/sentiment", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body,
+    const document = { type: "PLAIN_TEXT", content };
+    const [result] = await gnlClient.analyzeSentiment({
+      document,
+      encodingType: "UTF8",
     });
-    const data = await res.json();
 
-    // ParallelDots returns something like:
-    // { sentiment: "positive"|"neutral"|"negative", confidence_score: 0.87, sentiment_score?: number }
-    const label = ["positive", "neutral", "negative"].includes(data?.sentiment) ? data.sentiment : "neutral";
-    const confidence = typeof data?.confidence_score === "number" ? data.confidence_score : 0;
-    const score = typeof data?.sentiment_score === "number" ? data.sentiment_score : undefined;
+    const s = result?.documentSentiment || {};
+    const score = typeof s.score === "number" ? s.score : 0;          // -1..+1
+    const magnitude = typeof s.magnitude === "number" ? s.magnitude : 0; // >=0
 
-    return { provider: "ParallelDots", label, confidence, score };
+    // Simple threshold mapping; tweak to taste
+    const label = score > 0.25 ? "positive" : score < -0.25 ? "negative" : "neutral";
+
+    return { provider: "GoogleNL", label, confidence: magnitude, score };
   } catch (e) {
-    console.error("Sentiment error:", e);
-    return { provider: "None", label: "neutral", confidence: 0, score: 0 };
+    console.error("GoogleNL sentiment error:", e);
+    // fail-open so review creation/edit isn’t blocked
+    return { provider: "GoogleNL", label: "neutral", confidence: 0, score: 0 };
   }
 }
 
@@ -237,6 +302,7 @@ router.post("/:propertyId/comments", authenticateUser, async (req, res) => {
       return res.status(400).json({ success: false, message: "Rating must be between 1 and 5" });
     }
 
+    // Analyze sentiment with Google NL
     const s = await analyzeSentiment(String(text));
 
     const doc = await Review.findOneAndUpdate(
@@ -248,7 +314,7 @@ router.post("/:propertyId/comments", authenticateUser, async (req, res) => {
           "sentiment.provider": s.provider,
           "sentiment.label": s.label,
           "sentiment.confidence": s.confidence,
-          ...(s.score !== undefined ? { "sentiment.score": s.score } : {}),
+          ...(typeof s.score === "number" ? { "sentiment.score": s.score } : {}),
         },
         $setOnInsert: { createdAt: new Date() },
       },
@@ -283,7 +349,7 @@ router.put("/:propertyId/comments/:id", authenticateUser, async (req, res) => {
       update["sentiment.provider"] = s.provider;
       update["sentiment.label"] = s.label;
       update["sentiment.confidence"] = s.confidence;
-      if (s.score !== undefined) update["sentiment.score"] = s.score;
+      if (typeof s.score === "number") update["sentiment.score"] = s.score;
     }
     if (rating !== undefined) {
       const r = Number(rating);
@@ -328,6 +394,157 @@ router.delete("/:propertyId/comments/:id", authenticateUser, async (req, res) =>
   } catch (e) {
     console.error("deleteComment error:", e);
     return res.status(500).json({ success: false, message: "Failed to delete comment" });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+router.get("/suggest", async (req, res) => {
+  try {
+    const page  = Math.max(parseInt(req.query.page || "1", 10), 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit || "16", 10), 1), 50);
+    const skip  = (page - 1) * limit;
+
+    const minSentiment = typeof req.query.minSentiment !== "undefined"
+      ? Number(req.query.minSentiment) : 0.2;
+    const minRating = typeof req.query.minRating !== "undefined"
+      ? Number(req.query.minRating) : 0;
+
+    const type     = (req.query.type || "").trim();
+    const maxPrice = req.query.maxPrice ? Number(req.query.maxPrice) : undefined;
+    const q        = (req.query.q || "").trim();
+
+    // Aggregate reviews -> sentimentAvg, reviewCount, avgRating per property
+    const matchBase = {}; // (could filter reviews timeframe here if needed)
+    const grouped = await Review.aggregate([
+      { $match: matchBase },
+      {
+        $group: {
+          _id: "$propertyId",
+          reviewCount: { $sum: 1 },
+          avgRating: { $avg: "$rating" },
+          sentimentAvg: { $avg: "$sentiment.score" }, // may be null if missing
+          lastReviewAt: { $max: "$updatedAt" },
+        }
+      },
+      // Apply sentiment / rating thresholds
+      {
+        $match: {
+          $and: [
+            // keep null-safe comparisons (treat null as -Infinity)
+            { $expr: { $gte: [ { $ifNull: ["$sentimentAvg", -999] }, minSentiment ] } },
+            { $expr: { $gte: [ { $ifNull: ["$avgRating",   0] }, minRating ] } },
+          ]
+        }
+      },
+      // Join property docs
+      {
+        $lookup: {
+          from: "greenrentproperties", // collection name (lowercase plural of model)
+          localField: "_id",
+          foreignField: "_id",
+          as: "property"
+        }
+      },
+      { $unwind: "$property" },
+      // Property-side filters: status/type/price/q
+      {
+        $match: {
+          "property.status": "active",
+          ...(type ? { "property.propertyType": type } : {}),
+          ...(Number.isFinite(maxPrice) ? { "property.rentPrice": { $lte: maxPrice } } : {}),
+          ...(q ? {
+            $or: [
+              { "property.title":       { $regex: q, $options: "i" } },
+              { "property.description": { $regex: q, $options: "i" } },
+              { "property.address":     { $regex: q, $options: "i" } },
+            ]
+          } : {})
+        }
+      },
+      // Sort: by sentimentAvg desc, then avgRating desc, then newest property
+      {
+        $sort: {
+          sentimentAvg: -1,
+          avgRating: -1,
+          "property.createdAt": -1,
+        }
+      },
+      {
+        $facet: {
+          items: [
+            { $skip: skip },
+            { $limit: limit },
+            {
+              $project: {
+                _id: 0,
+                property: 1,
+                reviewCount: 1,
+                avgRating: { $round: ["$avgRating", 1] },
+                sentimentAvg: { $round: ["$sentimentAvg", 3] },
+                lastReviewAt: 1,
+              }
+            }
+          ],
+          total: [{ $count: "count" }]
+        }
+      }
+    ]);
+
+    const facet = grouped[0] || { items: [], total: [] };
+    const items = (facet.items || []).map(x => ({
+      ...x.property,
+      reviewCount: x.reviewCount,
+      avgRating: x.avgRating,
+      sentimentAvg: x.sentimentAvg,
+      lastReviewAt: x.lastReviewAt,
+    }));
+    const total = facet.total[0]?.count || 0;
+
+    // If no reviews matched (e.g., fresh system), optionally fallback to active properties
+    if (!total) {
+      const PropertyModel = await getPropertyModel();
+      const fallbackFilter = {
+        status: "active",
+        ...(type ? { propertyType: type } : {}),
+        ...(Number.isFinite(maxPrice) ? { rentPrice: { $lte: maxPrice } } : {}),
+        ...(q ? {
+          $or: [
+            { title:       { $regex: q, $options: "i" } },
+            { description: { $regex: q, $options: "i" } },
+            { address:     { $regex: q, $options: "i" } },
+          ]
+        } : {}),
+      };
+      const [fallback, cnt] = await Promise.all([
+        PropertyModel.find(fallbackFilter)
+          .sort({ createdAt: -1 })
+          .skip(skip).limit(limit).lean(),
+        PropertyModel.countDocuments(fallbackFilter),
+      ]);
+      return res.json({
+        success: true,
+        data: fallback.map(p => ({ ...p, avgRating: p.avgRating ?? 0, reviewCount: p.reviewCount ?? 0 })),
+        page, limit, total: cnt, pages: Math.ceil(cnt / limit),
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: items,
+      page, limit, total, pages: Math.ceil(total / limit),
+    });
+
+  } catch (err) {
+    console.error("suggest error:", err);
+    return res.status(500).json({ success: false, message: "Failed to suggest properties" });
   }
 });
 

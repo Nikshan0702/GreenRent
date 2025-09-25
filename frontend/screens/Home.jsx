@@ -417,7 +417,7 @@ export default function Home() {
 
           <TouchableOpacity
             className="flex-row items-center bg-gray-50 py-4 px-4 rounded-2xl mb-3 w-[48%] border border-gray-200"
-            onPress={() => navigation.navigate('AddProperty')}
+            onPress={() => navigation.navigate('SuggestApartments')}
             activeOpacity={0.9}
           >
             <Ionicons name="business-outline" size={22} color={GREEN} />

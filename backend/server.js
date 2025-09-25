@@ -199,6 +199,7 @@ import UserOperations from './controller/UserOperations.js';
 import PropertyOperations from './controller/PropertyOperations.js';
 import CertificateOperations from './controller/CertificateOperations.js';
 import ReviewOperations from './controller/ReviewOperations.js'
+import PropertySuggestOperation from './controller/PropertySuggestOperation.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -215,6 +216,7 @@ app.use('/UserOperations', UserOperations);
 app.use('/ReviewOperations', ReviewOperations);
 app.use('/PropertyOperations', PropertyOperations);
 app.use('/CertificateOperations', CertificateOperations);
+app.use('/PropertySuggestOperation', PropertySuggestOperation);
 
 
 const PORT = process.env.PORT || 4000;

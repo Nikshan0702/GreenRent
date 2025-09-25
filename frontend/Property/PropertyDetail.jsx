@@ -53,7 +53,7 @@ export default function PropertyDetail() {
   const [zoom, setZoom] = useState(false);
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 mt-16 bg-white">
       {/* Header */}
       <View className={`${Platform.OS === 'android' ? 'pt-8' : 'pt-12'} pb-3 px-4 bg-white border-b border-gray-100 flex-row items-center justify-between`}>
         <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 rounded-xl bg-gray-100 border border-gray-200" activeOpacity={0.8}>
