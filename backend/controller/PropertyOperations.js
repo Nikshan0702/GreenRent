@@ -573,4 +573,108 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+router.get("/suggestions", async (req, res) => {
+  try {
+    const lat = Number(req.query.lat);
+    const lng = Number(req.query.lng);
+    const maxDistance = Number(req.query.maxDistance || 5000); // in meters
+    const limit = Math.min(Number(req.query.limit || 50), 100);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return res.status(400).json({
+        success: false,
+        message: "lat and lng are required numbers",
+      });
+    }
+
+    const geo = { type: "Point", coordinates: [lng, lat] };
+
+    const results = await PropertyModel.aggregate([
+      {
+        $geoNear: {
+          near: geo,
+          distanceField: "distanceMeters",
+          spherical: true,
+          maxDistance,
+          query: { status: "active" },
+          key: "location",
+        },
+      },
+      {
+        $project: {
+          title: 1,
+          address: 1,
+          rentPrice: 1,
+          images: 1,
+          location: 1,
+          ecoBadge: 1,
+          propertyType: 1,
+          createdAt: 1,
+          distanceMeters: 1,
+        },
+      },
+      { $sort: { distanceMeters: 1 } },
+      { $limit: limit },
+    ]);
+
+    const data = results.map((p) => ({
+      _id: p._id,
+      title: p.title,
+      address: p.address,
+      rentPrice: p.rentPrice,
+      location: p.location,
+      ecoBadge: p.ecoBadge,
+      propertyType: p.propertyType,
+      imageUrl: p?.images?.[0]?.url || null,
+      distanceMeters: Math.round(p.distanceMeters),
+      createdAt: p.createdAt,
+    }));
+
+    return res.json({ success: true, data });
+  } catch (err) {
+    console.error("Nearby suggestions error:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to load nearby apartments" });
+  }
+});
+
+/**
+ * Get property by ID
+ * IMPORTANT: keep this AFTER /suggestions
+ */
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid property ID" });
+    }
+
+    const item = await PropertyModel.findById(id)
+      .populate("ownerId", "uname email number")
+      .lean();
+
+    if (!item) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Property not found" });
+    }
+
+    const owner = item.ownerId
+      ? {
+          name: item.ownerId.uname,
+          email: item.ownerId.email,
+          phone: item.ownerId.number,
+        }
+      : {};
+
+    res.json({ success: true, data: { ...item, owner } });
+  } catch (e) {
+    console.error("Fetch by id failed:", e);
+    res.status(500).json({ success: false, message: "Fetch failed" });
+  }
+});
+
 export default router;

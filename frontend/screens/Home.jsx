@@ -435,11 +435,11 @@ export default function Home() {
 
           <TouchableOpacity
             className="flex-row items-center bg-gray-50 py-4 px-4 rounded-2xl mb-3 w-[48%] border border-gray-200"
-            onPress={() => navigation.navigate('Contact')}
+            onPress={() => navigation.navigate('ApartmentSuggestions')}
             activeOpacity={0.9}
           >
             <Ionicons name="document-text" size={22} color={GREEN} />
-            <Text className="ml-2 text-[15px] font-semibold text-gray-900">Contact</Text>
+            <Text className="ml-2 text-[15px] font-semibold text-gray-900">Near</Text>
           </TouchableOpacity>
         </View>
 
