@@ -2,13 +2,15 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View, Text, FlatList, Image, TouchableOpacity, TextInput,
-  ActivityIndicator, RefreshControl, Alert, Platform, ScrollView, Modal, Pressable
+  ActivityIndicator, RefreshControl, Alert, Platform
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
 const API_BASE = Platform.OS === "ios" ? "http://localhost:4000" : "http://10.0.2.2:4000";
-const SUGGEST_URL = (page, limit, params={}) => {
+
+// Uses the reviews-driven suggest endpoint
+const SUGGEST_URL = (page, limit, params = {}) => {
   const qs = new URLSearchParams();
   qs.set("page", String(page));
   qs.set("limit", String(limit));
@@ -25,24 +27,30 @@ const currency = (n) =>
   new Intl.NumberFormat("en-LK", { style: "currency", currency: "LKR", maximumFractionDigits: 0 }).format(Number(n || 0));
 
 const BADGE_STYLES = {
-  Platinum:   { bg: "#e0f2fe", text: "#0369a1", icon: "diamond-outline",    border: "#bae6fd" },
-  Gold:       { bg: "#fef3c7", text: "#92400e", icon: "trophy-outline",     border: "#fde68a" },
-  Silver:     { bg: "#f8fafc", text: "#475569", icon: "medal-outline",      border: "#cbd5e1" },
-  Bronze:     { bg: "#fff7ed", text: "#9a3412", icon: "ribbon-outline",     border: "#fed7aa" },
+  Platinum:   { bg: "#e0f2fe", text: "#0369a1", icon: "diamond-outline",     border: "#bae6fd" },
+  Gold:       { bg: "#fef3c7", text: "#92400e", icon: "trophy-outline",      border: "#fde68a" },
+  Silver:     { bg: "#f8fafc", text: "#475569", icon: "medal-outline",       border: "#cbd5e1" },
+  Bronze:     { bg: "#fff7ed", text: "#9a3412", icon: "ribbon-outline",      border: "#fed7aa" },
   Unverified: { bg: "#f3f4f6", text: "#6b7280", icon: "alert-circle-outline", border: "#e5e7eb" },
 };
 
-const TYPES   = ["Apartment", "House", "Studio", "Villa", "Townhouse"];
-const PRICES  = [
-  { label: "≤ 100k", min: "", max: 100000 },
-  { label: "≤ 200k", min: "", max: 200000 },
-  { label: "≤ 300k", min: "", max: 300000 },
-  { label: "Any", min: "", max: "" },
+// Filter chip options
+const SENTIMENT = [
+  { label: "🙂 Sent≥0.2", val: 0.2 },
+  { label: "😄 Sent≥0.4", val: 0.4 },
+  { label: "🤩 Sent≥0.6", val: 0.6 },
 ];
+
 const RATINGS = [
-  { label: "All Ratings", val: "" },
+  { label: "All ratings", val: "" },
   { label: "≥ 4.0", val: 4 },
   { label: "≥ 3.0", val: 3 },
+];
+
+const REVIEWS = [
+  { label: "All reviews", val: 0 },
+  { label: "≥ 5 reviews", val: 5 },
+  { label: "≥ 10 reviews", val: 10 },
 ];
 
 const getLocationLabel = (item) => {
@@ -64,43 +72,48 @@ export default function SuggestApartments() {
   const [pages, setPages] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  // filters for suggestion
+  // sentiment + review filters + search (all server-side now)
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
-  const [priceFilter, setPriceFilter] = useState(PRICES[3]);
-  const [ratingFilter, setRatingFilter] = useState(RATINGS[0]);
-  const [minSentiment, setMinSentiment] = useState(0.2); // default same as backend
+  const [minSentiment, setMinSentiment] = useState(0.2);
+  const [minRating, setMinRating]       = useState("");
+  const [minReviews, setMinReviews]     = useState(0);
 
   const LIMIT = 16;
   const searchTimer = useRef(null);
 
   const fetchPage = useCallback(
     async (p = 1, replace = false) => {
-      const min = priceFilter?.min ?? "";
-      const max = priceFilter?.max ?? "";
       const params = {
         q: search,
-        type: typeFilter || "",
-        maxPrice: max !== "" ? max : "",
-        minRating: ratingFilter?.val ?? "",
-        minSentiment: minSentiment,
+        minSentiment,
+        ...(minRating !== "" ? { minRating } : {}),
+        ...(minReviews ? { minReviews } : {}),
       };
+
       const res = await fetch(SUGGEST_URL(p, LIMIT, params));
       if (!res.ok) throw new Error("Fetch failed");
       const data = await res.json();
+
       setPages(data.pages || 1);
-      setItems(prev => (replace ? data.data : [...prev, ...data.data]));
+      const pageItems = data.data || [];
+      setItems(prev => (replace ? pageItems : [...prev, ...pageItems]));
     },
-    [search, typeFilter, priceFilter, ratingFilter, minSentiment]
+    [search, minSentiment, minRating, minReviews]
   );
 
-  // initial + filters (except search which is debounced)
+  // initial + filter changes (debounce handled for search)
   useEffect(() => {
     (async () => {
       setLoading(true);
-      try { await fetchPage(1, true); setPage(1); }
-      catch (e) { Alert.alert("Error", e.message); }
-      finally { setLoading(false); }
+      try {
+        setItems([]);
+        await fetchPage(1, true);
+        setPage(1);
+      } catch (e) {
+        Alert.alert("Error", e.message);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [fetchPage]);
 
@@ -109,30 +122,52 @@ export default function SuggestApartments() {
     setSearch(v);
     if (searchTimer.current) clearTimeout(searchTimer.current);
     searchTimer.current = setTimeout(async () => {
-      try { await fetchPage(1, true); setPage(1); } catch {}
+      try {
+        setItems([]);
+        await fetchPage(1, true);
+        setPage(1);
+      } catch {}
     }, 350);
   };
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    try { await fetchPage(1, true); setPage(1); }
-    finally { setRefreshing(false); }
+    try {
+      setItems([]);
+      await fetchPage(1, true);
+      setPage(1);
+    } finally {
+      setRefreshing(false);
+    }
   }, [fetchPage]);
 
   const loadMore = useCallback(async () => {
     if (loadingMore || loading || page >= pages) return;
     setLoadingMore(true);
-    try { const next = page + 1; await fetchPage(next, false); setPage(next); }
-    finally { setLoadingMore(false); }
+    try {
+      const next = page + 1;
+      await fetchPage(next, false);
+      setPage(next);
+    } finally {
+      setLoadingMore(false);
+    }
   }, [loadingMore, loading, page, pages, fetchPage]);
 
   const onCardPress = (item) => navigation.navigate("PropertyDetail", { property: item });
+
+  const sentimentLabel = (s) => {
+    if (typeof s !== "number") return "—";
+    if (s > 0.25) return "Positive";
+    if (s < -0.25) return "Negative";
+    return "Neutral";
+  };
 
   const renderItem = ({ item, index }) => {
     const img = ensureAbsolute(item?.images?.[0]?.url || item?.images?.[0]);
     const badge = item?.ecoBadge || "Unverified";
     const pal = BADGE_STYLES[badge] || BADGE_STYLES.Unverified;
     const locLabel = getLocationLabel(item);
+
     const avg = Number(item?.avgRating ?? 0);
     const rc  = Number(item?.reviewCount ?? 0);
     const sa  = typeof item?.sentimentAvg === "number" ? item.sentimentAvg : null;
@@ -194,6 +229,7 @@ export default function SuggestApartments() {
             {item.title}
           </Text>
 
+          {/* concise location */}
           <View className="flex-row items-center mt-1">
             <Ionicons name="location-outline" size={12} color="#6b7280" />
             <Text className="text-[11px] text-gray-600 ml-1" numberOfLines={1}>
@@ -201,19 +237,22 @@ export default function SuggestApartments() {
             </Text>
           </View>
 
-          {/* rating + reviews + sentiment */}
-          <View className="flex-row items-center mt-1.5">
-            <Stars value={avg} />
-            <Text className="text-[11px] text-gray-600 ml-1">
-              {avg ? avg.toFixed(1) : "—"}{rc ? ` (${rc})` : ""}
-            </Text>
+          {/* customer comments summary (reviews + sentiment) */}
+          <View className="mt-1.5">
+            <View className="flex-row items-center">
+              <Stars value={avg} />
+              <Text className="text-[11px] text-gray-600 ml-1">
+                {avg ? avg.toFixed(1) : "—"}{rc ? ` (${rc})` : ""}
+              </Text>
+            </View>
+            {sa !== null && (
+              <Text className="text-[10px] text-emerald-700 mt-0.5">
+                Customer sentiment: {sentimentLabel(sa)} {`(${sa.toFixed(2)})`}
+              </Text>
+            )}
           </View>
-          {sa !== null && (
-            <Text className="text-[10px] text-emerald-700 mt-0.5">
-              Sentiment: {sa.toFixed(2)}
-            </Text>
-          )}
 
+          {/* price & type */}
           <View className="flex-row items-center mt-2">
             <View className="px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 mr-1.5">
               <Text className="text-indigo-700 text-[10px] font-semibold">{currency(item.rentPrice)}/mo</Text>
@@ -273,6 +312,7 @@ export default function SuggestApartments() {
             <TouchableOpacity
               onPress={() => {
                 setSearch("");
+                setItems([]);
                 fetchPage(1, true).then(() => setPage(1));
               }}
             >
@@ -281,37 +321,43 @@ export default function SuggestApartments() {
           ) : null}
         </View>
 
-        {/* Filters */}
-        <View className="mt-2">
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 8 }}>
-            {/* Types */}
-            <Chip label="All Types" active={!typeFilter} onPress={() => setTypeFilter("")} />
-            {TYPES.map(t => (
-              <Chip key={t} label={t} active={typeFilter === t} onPress={() => setTypeFilter(prev => prev === t ? "" : t)} />
-            ))}
-
-            {/* Prices */}
-            {PRICES.map(p => (
-              <Chip key={p.label} label={p.label} active={priceFilter?.label === p.label} onPress={() => setPriceFilter(p)} />
-            ))}
-
-            {/* Ratings */}
-            {RATINGS.map(r => (
-              <Chip key={r.label} label={r.label} active={ratingFilter?.label === r.label} onPress={() => setRatingFilter(r)} />
-            ))}
-
-            {/* Sentiment threshold quick toggles */}
-            <Chip label="🙂 Sent≥0.2" active={minSentiment === 0.2} onPress={() => setMinSentiment(0.2)} />
-            <Chip label="😄 Sent≥0.4" active={minSentiment === 0.4} onPress={() => setMinSentiment(0.4)} />
-            <Chip label="🤩 Sent≥0.6" active={minSentiment === 0.6} onPress={() => setMinSentiment(0.6)} />
-          </ScrollView>
+        {/* Sentiment / Rating / Reviews chips */}
+        <View className="mt-2" style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center" }}>
+          {/* Sentiment */}
+          {SENTIMENT.map(opt => (
+            <Chip
+              key={opt.val}
+              label={opt.label}
+              active={minSentiment === opt.val}
+              onPress={() => setMinSentiment(opt.val)}
+            />
+          ))}
+          {/* Rating */}
+          {RATINGS.map(opt => (
+            <Chip
+              key={opt.label}
+              label={opt.label}
+              active={minRating === opt.val}
+              onPress={() => setMinRating(opt.val)}
+            />
+          ))}
+          {/* Reviews */}
+          {REVIEWS.map(opt => (
+            <Chip
+              key={opt.label}
+              label={opt.label}
+              active={minReviews === opt.val}
+              onPress={() => setMinReviews(opt.val)}
+            />
+          ))}
 
           <TouchableOpacity
-            onPress={() => fetchPage(1, true).then(() => setPage(1))}
-            className="mt-2 px-3 py-2 rounded-xl bg-gray-900 self-start"
+            disabled={loading}
+            onPress={() => { setItems([]); fetchPage(1, true).then(() => setPage(1)); }}
+            className="ml-2 px-3 py-2 rounded-xl bg-gray-900"
             activeOpacity={0.9}
           >
-            <Text className="text-white text-[12px] font-semibold">Apply</Text>
+            <Text className="text-white text-[12px] font-semibold">{loading ? "Applying…" : "Apply"}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -344,7 +390,7 @@ function Chip({ label, active, onPress }) {
   return (
     <TouchableOpacity
       onPress={onPress}
-      className="mr-2"
+      className="mr-2 mb-2"
       style={{
         backgroundColor: active ? "#e0e7ff" : "#f3f4f6",
         borderColor: active ? "#c7d2fe" : "#e5e7eb",

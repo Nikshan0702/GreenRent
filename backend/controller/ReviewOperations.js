@@ -397,64 +397,85 @@ router.delete("/:propertyId/comments/:id", authenticateUser, async (req, res) =>
   }
 });
 
-
-
-
-
-
-
-
-
-
 router.get("/suggest", async (req, res) => {
   try {
-    const page  = Math.max(parseInt(req.query.page || "1", 10), 1);
-    const limit = Math.min(Math.max(parseInt(req.query.limit || "16", 10), 1), 50);
-    const skip  = (page - 1) * limit;
+    const page       = Math.max(parseInt(req.query.page  ?? "1", 10), 1);
+    const limit      = Math.min(Math.max(parseInt(req.query.limit ?? "16", 10), 1), 50);
+    const skip       = (page - 1) * limit;
 
-    const minSentiment = typeof req.query.minSentiment !== "undefined"
-      ? Number(req.query.minSentiment) : 0.2;
-    const minRating = typeof req.query.minRating !== "undefined"
-      ? Number(req.query.minRating) : 0;
+    // numeric score threshold (-1..+1), default 0.2
+    const minSentiment = (req.query.minSentiment !== undefined)
+      ? Number(req.query.minSentiment)
+      : 0.2;
 
-    const type     = (req.query.type || "").trim();
-    const maxPrice = req.query.maxPrice ? Number(req.query.maxPrice) : undefined;
-    const q        = (req.query.q || "").trim();
+    // minimum avg star rating (1..5)
+    const minRating    = (req.query.minRating !== undefined)
+      ? Number(req.query.minRating)
+      : 0;
 
-    // Aggregate reviews -> sentimentAvg, reviewCount, avgRating per property
-    const matchBase = {}; // (could filter reviews timeframe here if needed)
-    const grouped = await Review.aggregate([
-      { $match: matchBase },
+    // optional review-count threshold (client used to do this; now we can support on server)
+    const minReviews   = (req.query.minReviews !== undefined)
+      ? Math.max(0, Number(req.query.minReviews))
+      : 0;
+
+    const type         = (req.query.type || "").trim();
+    const maxPrice     = (req.query.maxPrice !== undefined && req.query.maxPrice !== "")
+      ? Number(req.query.maxPrice)
+      : undefined;
+    const q            = (req.query.q || "").trim();
+
+    // sentimentLabel can be string or array of strings
+    let labels = req.query.sentimentLabel;
+    if (labels && !Array.isArray(labels)) labels = [labels];
+    const validLabels = ["positive", "neutral", "negative"];
+    const labelFilter = Array.isArray(labels)
+      ? labels.filter(l => validLabels.includes(String(l).toLowerCase()))
+      : [];
+
+    // --- Build pipeline ---
+    const pipeline = [];
+
+    // (A) Optional: filter reviews by sentiment label BEFORE grouping
+    if (labelFilter.length > 0) {
+      pipeline.push({
+        $match: { "sentiment.label": { $in: labelFilter } }
+      });
+    }
+
+    // (B) Group reviews per property
+    pipeline.push(
       {
         $group: {
           _id: "$propertyId",
-          reviewCount: { $sum: 1 },
-          avgRating: { $avg: "$rating" },
-          sentimentAvg: { $avg: "$sentiment.score" }, // may be null if missing
+          reviewCount:  { $sum: 1 },
+          avgRating:    { $avg: "$rating" },
+          sentimentAvg: { $avg: "$sentiment.score" }, // average Google NL score across reviews
+          // Optional: you can also compute label proportions if you want:
+          // posCount: { $sum: { $cond: [{ $eq: ["$sentiment.label", "positive"] }, 1, 0] } },
           lastReviewAt: { $max: "$updatedAt" },
         }
       },
-      // Apply sentiment / rating thresholds
+      // (C) Apply numeric thresholds on the aggregates (null-safe)
       {
         $match: {
           $and: [
-            // keep null-safe comparisons (treat null as -Infinity)
             { $expr: { $gte: [ { $ifNull: ["$sentimentAvg", -999] }, minSentiment ] } },
-            { $expr: { $gte: [ { $ifNull: ["$avgRating",   0] }, minRating ] } },
+            { $expr: { $gte: [ { $ifNull: ["$avgRating",   0] },    minRating    ] } },
+            { $expr: { $gte: [ { $ifNull: ["$reviewCount",  0] },    minReviews   ] } },
           ]
         }
       },
-      // Join property docs
+      // (D) Join property docs
       {
         $lookup: {
-          from: "greenrentproperties", // collection name (lowercase plural of model)
+          from: "greenrentproperties", // <-- ensure this matches your actual collection name!
           localField: "_id",
           foreignField: "_id",
-          as: "property"
+          as: "property",
         }
       },
       { $unwind: "$property" },
-      // Property-side filters: status/type/price/q
+      // (E) Property-side filters
       {
         $match: {
           "property.status": "active",
@@ -465,18 +486,16 @@ router.get("/suggest", async (req, res) => {
               { "property.title":       { $regex: q, $options: "i" } },
               { "property.description": { $regex: q, $options: "i" } },
               { "property.address":     { $regex: q, $options: "i" } },
+              { "property.locationName":{ $regex: q, $options: "i" } },
             ]
-          } : {})
+          } : {}),
         }
       },
-      // Sort: by sentimentAvg desc, then avgRating desc, then newest property
+      // (F) Sort by community signals
       {
-        $sort: {
-          sentimentAvg: -1,
-          avgRating: -1,
-          "property.createdAt": -1,
-        }
+        $sort: { sentimentAvg: -1, avgRating: -1, "property.createdAt": -1 }
       },
+      // (G) Facet for pagination
       {
         $facet: {
           items: [
@@ -487,8 +506,8 @@ router.get("/suggest", async (req, res) => {
                 _id: 0,
                 property: 1,
                 reviewCount: 1,
-                avgRating: { $round: ["$avgRating", 1] },
-                sentimentAvg: { $round: ["$sentimentAvg", 3] },
+                avgRating:   { $round: ["$avgRating", 1] },
+                sentimentAvg:{ $round: ["$sentimentAvg", 3] },
                 lastReviewAt: 1,
               }
             }
@@ -496,43 +515,28 @@ router.get("/suggest", async (req, res) => {
           total: [{ $count: "count" }]
         }
       }
-    ]);
+    );
 
-    const facet = grouped[0] || { items: [], total: [] };
+    const result = await Review.aggregate(pipeline);
+    const facet  = result[0] || { items: [], total: [] };
+
     const items = (facet.items || []).map(x => ({
       ...x.property,
-      reviewCount: x.reviewCount,
-      avgRating: x.avgRating,
+      reviewCount:  x.reviewCount,
+      avgRating:    x.avgRating,
       sentimentAvg: x.sentimentAvg,
       lastReviewAt: x.lastReviewAt,
     }));
+
     const total = facet.total[0]?.count || 0;
 
-    // If no reviews matched (e.g., fresh system), optionally fallback to active properties
+    // Optional: fallback (when no reviews match)
     if (!total) {
-      const PropertyModel = await getPropertyModel();
-      const fallbackFilter = {
-        status: "active",
-        ...(type ? { propertyType: type } : {}),
-        ...(Number.isFinite(maxPrice) ? { rentPrice: { $lte: maxPrice } } : {}),
-        ...(q ? {
-          $or: [
-            { title:       { $regex: q, $options: "i" } },
-            { description: { $regex: q, $options: "i" } },
-            { address:     { $regex: q, $options: "i" } },
-          ]
-        } : {}),
-      };
-      const [fallback, cnt] = await Promise.all([
-        PropertyModel.find(fallbackFilter)
-          .sort({ createdAt: -1 })
-          .skip(skip).limit(limit).lean(),
-        PropertyModel.countDocuments(fallbackFilter),
-      ]);
+      // return empty list or fallback to active properties; keeping empty is clearer for a “reviews-based” page
       return res.json({
         success: true,
-        data: fallback.map(p => ({ ...p, avgRating: p.avgRating ?? 0, reviewCount: p.reviewCount ?? 0 })),
-        page, limit, total: cnt, pages: Math.ceil(cnt / limit),
+        data: [],
+        page, limit, total: 0, pages: 0,
       });
     }
 
@@ -541,7 +545,6 @@ router.get("/suggest", async (req, res) => {
       data: items,
       page, limit, total, pages: Math.ceil(total / limit),
     });
-
   } catch (err) {
     console.error("suggest error:", err);
     return res.status(500).json({ success: false, message: "Failed to suggest properties" });
