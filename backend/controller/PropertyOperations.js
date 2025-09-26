@@ -677,4 +677,106 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+
+
+
+
+
+
+
+
+// routes/PropertyOperations.js
+// router.put("/:id/eco", authenticateUser, async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { ecoFeatures = [] } = req.body || {};
+
+//     if (!mongoose.Types.ObjectId.isValid(id)) {
+//       return res.status(400).json({ success: false, message: "Invalid property id" });
+//     }
+
+//     const prop = await PropertyModel.findById(id);
+//     if (!prop) return res.status(404).json({ success: false, message: "Property not found" });
+
+//     // Only owner or admin
+//     const isOwner = String(prop.ownerId) === String(req.user._id);
+//     if (!req.user.isAdmin && !isOwner) {
+//       return res.status(403).json({ success: false, message: "Unauthorized" });
+//     }
+
+//     // Update features
+//     prop.ecoFeatures = Array.isArray(ecoFeatures) ? ecoFeatures : [];
+
+//     // Recompute composite from (new) features + (current) certificate badge
+//     const certBadge = prop.ecoCertificate?.badge || "Unverified";
+//     prop.ecoBadge = PropertyModel.computeCompositeBadge(prop.ecoFeatures, certBadge);
+
+//     await prop.save();
+
+//     return res.json({ success: true, data: prop.toJSON() });
+//   } catch (err) {
+//     console.error("Update eco features error:", err);
+//     return res.status(500).json({ success: false, message: "Failed to update eco features" });
+//   }
+// });
+
+
+
+router.put("/:id/eco", authenticateUser, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { ecoFeatures = [] } = req.body || {};
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: "Invalid property id" });
+    }
+
+    const prop = await PropertyModel.findById(id);
+    if (!prop) return res.status(404).json({ success: false, message: "Property not found" });
+
+    const isOwner = String(prop.ownerId) === String(req.user._id);
+    if (!req.user.isAdmin && !isOwner) {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    prop.ecoFeatures = Array.isArray(ecoFeatures) ? ecoFeatures : [];
+    // pre('save') will set ecoScore & ecoBadge correctly
+    await prop.save();
+
+    return res.json({ success: true, data: prop.toJSON() });
+  } catch (err) {
+    console.error("Update eco features error:", err);
+    return res.status(500).json({ success: false, message: "Failed to update eco features" });
+  }
+});
+
+/** DELETE /PropertyOperations/:id/eco
+ *  - clears eco features
+ *  - recomputes ecoScore (0) and ecoBadge (falls back to certificate badge or Unverified)
+ */
+router.delete("/:id/eco", authenticateUser, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: "Invalid property id" });
+    }
+
+    const prop = await PropertyModel.findById(id);
+    if (!prop) return res.status(404).json({ success: false, message: "Property not found" });
+
+    const isOwner = String(prop.ownerId) === String(req.user._id);
+    if (!req.user.isAdmin && !isOwner) {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    prop.ecoFeatures = [];
+    await prop.save();
+
+    return res.json({ success: true, data: prop.toJSON() });
+  } catch (err) {
+    console.error("Delete eco features error:", err);
+    return res.status(500).json({ success: false, message: "Failed to clear eco features" });
+  }
+});
+
 export default router;
