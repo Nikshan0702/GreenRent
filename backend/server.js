@@ -199,6 +199,7 @@ import UserOperations from './controller/UserOperations.js';
 import PropertyOperations from './controller/PropertyOperations.js';
 import CertificateOperations from './controller/CertificateOperations.js';
 import ReviewOperations from './controller/ReviewOperations.js'
+// import BookingOperations from './controller/BookingOperations.js';
 import PropertySuggestOperation from './controller/PropertySuggestOperation.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -214,6 +215,7 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 // app.use('/Auth', Auth);
 app.use('/UserOperations', UserOperations);
 app.use('/ReviewOperations', ReviewOperations);
+// app.use('/BookingOperations', BookingOperations);
 app.use('/PropertyOperations', PropertyOperations);
 app.use('/CertificateOperations', CertificateOperations);
 app.use('/PropertySuggestOperation', PropertySuggestOperation);
