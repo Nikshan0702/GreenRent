@@ -375,7 +375,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import dp from '../GreenAssets/dp.jpeg';
 // ---- CONFIG ----
 const API_BASE = 'http://10.0.2.2:4000'; // Android emulator
 const GET_USER_URL = `${API_BASE}/UserOperations/getUser`;
@@ -633,7 +633,7 @@ const ProfileScreen = () => {
             <View className="bg-white mx-5 mt-6 p-6 rounded-xl shadow-sm border border-gray-100 items-center">
               <View className="relative mb-4">
                 <Image
-                  source={{ uri: 'https://randomuser.me/api/portraits/men/1.jpg' }}
+                  source={dp}
                   className="w-24 h-24 rounded-full"
                 />
                 <TouchableOpacity
