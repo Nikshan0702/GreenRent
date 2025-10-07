@@ -711,11 +711,11 @@ const ProfileScreen = () => {
 
                 <TouchableOpacity
                   className="flex-row items-center bg-gray-50 py-4 px-4 rounded-xl w-[48%]"
-                  onPress={() => navigation.navigate('Support')}
+                  onPress={() => navigation.navigate('LandlordBookings')}
                 >
                   <Ionicons name="help-circle" size={20} color={GREEN} />
                   <Text className="text-gray-700 font-medium ml-2 text-sm">
-                    Support
+                    Bookings
                   </Text>
                 </TouchableOpacity>
               </View>

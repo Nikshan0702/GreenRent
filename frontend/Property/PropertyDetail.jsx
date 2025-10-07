@@ -1408,6 +1408,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 
 
+
 const PRIMARY = '#3CC172'; // brand green
 
 const API_BASE = Platform.OS === 'ios' ? 'http://localhost:4000' : 'http://10.0.2.2:4000';
@@ -1872,7 +1873,7 @@ function CommentModal({ modal, setModal, onPosted }) {
 
 
 
- function BookingRequestModal({ visible, onClose, property }) {
+function BookingRequestModal({ visible, onClose, property }) {
   const [name, setName]           = useState('');
   const [email, setEmail]         = useState('');
   const [phone, setPhone]         = useState('');
@@ -1910,57 +1911,56 @@ function CommentModal({ modal, setModal, onPosted }) {
 
   const quickPick = (label) => setPref(label);
 
-  const submit = async () => {
-    if (!validate()) return;
+// BookingRequestModal.js (only the submit() fetch changed; keep the rest)
+const submit = async () => {
+  if (!validate()) return;
+  try {
+    setSubmitting(true);
+
     try {
-      setSubmitting(true);
+      await AsyncStorage.setItem('user_name', name.trim());
+      if (email) await AsyncStorage.setItem('user_email', email.trim());
+    } catch {}
 
-      // cache name/email (non-critical)
-      try {
-        await AsyncStorage.setItem('user_name', name.trim());
-        if (email) await AsyncStorage.setItem('user_email', email.trim());
-      } catch (storageError) {
-        console.log('Storage save failed:', storageError);
-      }
+    const payload = {
+      type: 'contactRequest',
+      propertyId: property?._id,
+      name: name.trim(),
+      email: email.trim() || undefined,
+      phone: phone.trim() || undefined,
+      preferredDate: preferredDate.trim() || undefined,
+      message: message.trim() || undefined,
+    };
 
-      // IMPORTANT: path matches server mount: /ReviewOperations + /bookings
-      const res = await fetch(`${API_BASE}/ReviewOperations/bookings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'contactRequest',
-          propertyId: property?._id,
-          name: name.trim(),
-          email: email.trim() || undefined,
-          phone: phone.trim() || undefined,
-          // if you want to send free-text, just keep it as-is; server accepts ISO date too
-          preferredDate: preferredDate.trim() || undefined,
-          message: message.trim() || undefined,
-        }),
-      });
+    // ✅ correct mounted route
+    const res = await fetch(`${API_BASE}/ReviewOperations/bookings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
 
-      let data;
-      try {
-        data = await res.clone().json();
-      } catch {
-        const raw = await res.text().catch(() => '');
-        console.log('Non-JSON response body:', raw?.slice(0, 400));
-        throw new Error('Invalid response from server');
-      }
-
-      if (!res.ok || data?.success === false) {
-        throw new Error(data?.message || `Request failed with status ${res.status}`);
-      }
-
-      Alert.alert('Request sent', 'The landlord was notified. Please check your email for confirmation.');
-      onClose?.();
-    } catch (e) {
-      console.error('Booking submission error:', e);
-      Alert.alert('Could not send', e.message || 'Please try again later.');
-    } finally {
-      setSubmitting(false);
+    let data;
+    try {
+      data = await res.clone().json();
+    } catch {
+      const raw = await res.text().catch(() => '');
+      console.log('Non-JSON response body:', raw?.slice(0, 400));
+      throw new Error('Invalid response from server');
     }
-  };
+
+    if (!res.ok || data?.success === false) {
+      throw new Error(data?.message || `Request failed with status ${res.status}`);
+    }
+
+    Alert.alert('Request sent', 'The landlord was notified. Please check your email for confirmation.');
+    onClose?.();
+  } catch (e) {
+    console.error('Booking submission error:', e);
+    Alert.alert('Could not send', e.message || 'Please try again later.');
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   if (!visible) return null;
 
@@ -1995,7 +1995,7 @@ function CommentModal({ modal, setModal, onPosted }) {
               <TextInput
                 value={name}
                 onChangeText={(t)=>{ setName(t); if (errors.name) setErrors(prev=>({ ...prev, name: undefined })); }}
-                placeholder="Your name *"
+                placeholder="Your name "
                 accessibilityLabel="Your name"
                 returnKeyType="next"
               />
@@ -2098,7 +2098,7 @@ function CommentModal({ modal, setModal, onPosted }) {
       </View>
     </Modal>
   );
-} 
+}
 
 /* ---------- Zoom image ---------- */
 function ZoomImage({ visible, onClose, src }) {
