@@ -269,7 +269,7 @@ export default function Home() {
 
   // ===== Sidebar (visual tweaks only) =====
   const Sidebar = () => (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-white mt-10">
       {/* Header */}
       <View className="pt-14 pb-3 px-5 border-b border-gray-100 flex-row items-center justify-between">
         <Text className="text-xl font-extrabold text-gray-900">Menu</Text>
@@ -378,7 +378,7 @@ export default function Home() {
           showsVerticalScrollIndicator={false}
         >
           {/* Top bar (balanced alignment) */}
-          <View className="flex-row items-center justify-between py-4">
+          <View className="flex-row items-center justify-between py-4 mt-10">
             <TouchableOpacity
               onPress={toggleSidebar}
               className="p-2 rounded-xl bg-gray-50"
@@ -389,7 +389,7 @@ export default function Home() {
               <Ionicons name="menu" size={22} color="#111827" />
             </TouchableOpacity>
 
-            <View className="items-center mt-">
+            <View className="items-center mt-10">
               <Text className="text-[22px] font-extrabold text-gray-900">Green Rent</Text>
               <View className="h-1 w-10 mt-1 rounded bg-[#3cc172]" />
             </View>
@@ -404,7 +404,7 @@ export default function Home() {
           </View>
 
           {/* Quick Actions (consistent cards) */}
-          <View className="flex-row flex-wrap justify-between mb-2">
+          {/* <View className="flex-row flex-wrap justify-between mb-2">
             <TouchableOpacity
               className="flex-row items-center bg-gray-50 py-4 px-4 rounded-2xl mb-3 w-[48%] border border-gray-200"
               onPress={() => navigation.navigate('PropertyList')}
@@ -428,7 +428,7 @@ export default function Home() {
               <View className="w-10 h-10 rounded-xl bg-white border border-gray-100 items-center justify-center">
                 <Ionicons name="business-outline" size={18} color={GREEN} />
               </View>
-              <Text className="ml-3 text-[15px] font-semibold text-gray-900">Near</Text>
+              <Text className="ml-3 text-[15px] font-semibold text-gray-900">rating</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -456,7 +456,76 @@ export default function Home() {
               </View>
               <Text className="ml-3 text-[15px] font-semibold text-gray-900">Near</Text>
             </TouchableOpacity>
-          </View>
+          </View> */}
+                                              {/* Quick Actions — compact & professional layout */}
+<View className="flex-row flex-wrap justify-between mb-4">
+  {[
+    {
+      title: "Apartments",
+      subtitle: "All listings",
+      icon: "business",
+      screen: "PropertyList",
+      tint: "#ECFDF5", // light green
+    },
+    {
+      title: "Rating",
+      subtitle: "Top rated",
+      icon: "star-outline",
+      screen: "SuggestApartments",
+      tint: "#ECFDF5",
+    },
+    {
+      title: "App Tips",
+      subtitle: "Smart guides",
+      icon: "bulb-outline",
+      screen: "AppTipsScreen",
+      tint: "#ECFDF5",
+    },
+    {
+      title: "Nearby",
+      subtitle: "Close to you",
+      icon: "location-outline",
+      screen: "ApartmentSuggestions",
+      tint: "#ECFDF5",
+    },
+  ].map((btn, idx) => (
+    <TouchableOpacity
+      key={idx}
+      onPress={() => navigation.navigate(btn.screen)}
+      activeOpacity={0.9}
+      accessibilityRole="button"
+      accessibilityLabel={btn.title}
+      className="w-[47%] mb-3"
+    >
+      <View
+        className="flex-col items-center justify-center p-4 rounded-2xl bg-white border border-gray-100"
+        style={{
+          height: 110,
+          shadowColor: "#000",
+          shadowOpacity: 0.05,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 3 },
+          elevation: 2,
+        }}
+      >
+        <View
+          className="w-10 h-10 rounded-xl items-center justify-center mb-2"
+          style={{ backgroundColor: btn.tint }}
+        >
+          <Ionicons name={btn.icon} size={18} color={GREEN} />
+        </View>
+
+        <Text className="text-[14px] font-semibold text-gray-900 text-center">
+          {btn.title}
+        </Text>
+        <Text className="text-[10px] text-gray-500 text-center mt-0.5">
+          {btn.subtitle}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  ))}
+</View>
+          
 
           {/* Section header */}
           <View className="px-1 py-5">

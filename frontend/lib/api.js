@@ -11,6 +11,7 @@ async function getJson(url) {
   return data;
 }
 
+// lib/api.js
 export async function fetchBookings({ role, email, landlordId, page=1, limit=20, status, type, q }) {
   const qs = new URLSearchParams({ role, page: String(page), limit: String(limit) });
   if (email) qs.set('email', email);
@@ -18,7 +19,18 @@ export async function fetchBookings({ role, email, landlordId, page=1, limit=20,
   if (status) qs.set('status', status);
   if (type) qs.set('type', type);
   if (q) qs.set('q', q);
-  return getJson(`${API_BASE}/ReviewOperations/bookings?${qs.toString()}`);
+
+  const url = `${API_BASE}/ReviewOperations/bookings?${qs.toString()}`;
+  const res = await fetch(url);
+  const txt = await res.text();
+  let data = {};
+  try { data = JSON.parse(txt); } catch (e) {
+    console.log('fetchBookings non-JSON:', txt?.slice(0, 300));
+  }
+  if (!res.ok || data?.success === false) {
+    throw new Error(data?.message || `HTTP ${res.status}`);
+  }
+  return data;
 }
 
 export async function patchBookingStatus(id, status) {

@@ -585,6 +585,225 @@ const getLocationLabel = (item) => {
   return 'Location';
 };
 
+// export default function PropertyList() {
+//   const navigation = useNavigation();
+
+//   const [items, setItems] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [refreshing, setRefreshing] = useState(false);
+//   const [page, setPage] = useState(1);
+//   const [pages, setPages] = useState(1);
+//   const [loadingMore, setLoadingMore] = useState(false);
+
+//   const [search, setSearch] = useState('');
+//   const [typeFilter, setTypeFilter] = useState('');
+//   const [priceFilter, setPriceFilter] = useState(PRICES[3]); // Any
+
+//   const LIMIT = 16;
+
+//   const fetchPage = useCallback(
+//     async (p = 1, replace = false) => {
+//       const min = priceFilter?.min ?? '';
+//       const max = priceFilter?.max ?? '';
+//       const res = await fetch(LIST_URL(p, LIMIT, search, typeFilter, min, max));
+//       if (!res.ok) throw new Error('Fetch failed');
+//       const data = await res.json();
+//       setPages(data.pages || 1);
+//       setItems((prev) => (replace ? data.data : [...prev, ...data.data]));
+//     },
+//     [search, typeFilter, priceFilter]
+//   );
+
+//   useEffect(() => {
+//     (async () => {
+//       setLoading(true);
+//       try { await fetchPage(1, true); setPage(1); }
+//       catch (e) { Alert.alert('Error', e.message); }
+//       finally { setLoading(false); }
+//     })();
+//   }, [fetchPage]);
+
+//   const onRefresh = useCallback(async () => {
+//     setRefreshing(true);
+//     try { await fetchPage(1, true); setPage(1); }
+//     finally { setRefreshing(false); }
+//   }, [fetchPage]);
+
+//   const loadMore = useCallback(async () => {
+//     if (loadingMore || loading || page >= pages) return;
+//     setLoadingMore(true);
+//     try { const next = page + 1; await fetchPage(next, false); setPage(next); }
+//     finally { setLoadingMore(false); }
+//   }, [loadingMore, loading, page, pages, fetchPage]);
+
+//   const onCardPress = (item) => {
+//     navigation.navigate('PropertyDetail', { property: item }); // 👉 go to detail
+//   };
+
+//   const renderItem = ({ item, index }) => {
+//     const img = ensureAbsolute(item?.images?.[0]?.url || item?.images?.[0]);
+//     const badge = item?.ecoBadge || 'Unverified';
+//     const pal = BADGE_STYLES[badge] || BADGE_STYLES.Unverified;
+//     const locLabel = getLocationLabel(item);
+
+//     return (
+//       <TouchableOpacity
+//         activeOpacity={0.9}
+//         onPress={() => onCardPress(item)}
+//         className="rounded-2xl overflow-hidden"
+//         style={{
+//           width: '48%',
+//           marginTop: index < 2 ? 0 : 12,
+//           backgroundColor: '#fff',
+//           borderColor: '#eef2f7',
+//           borderWidth: 1,
+//           shadowColor: '#000',
+//           shadowOpacity: 0.06,
+//           shadowRadius: 8,
+//           shadowOffset: { width: 0, height: 2 },
+//           elevation: 2,
+//         }}
+//       >
+//         <View style={{ position: 'relative' }}>
+//           {img ? (
+//             <Image source={{ uri: img }} style={{ width: '100%', height: 120 }} resizeMode="cover" />
+//           ) : (
+//             <View style={{ width: '100%', height: 120 }} className="bg-gray-100 items-center justify-center">
+//               <Ionicons name="image-outline" size={18} color="#9ca3af" />
+//             </View>
+//           )}
+
+//           {/* eco badge chip */}
+//           <View
+//             style={{
+//               position: 'absolute',
+//               top: 8,
+//               left: 8,
+//               flexDirection: 'row',
+//               alignItems: 'center',
+//               backgroundColor: pal.bg,
+//               borderColor: pal.border,
+//               borderWidth: 1,
+//               borderRadius: 999,
+//               paddingHorizontal: 8,
+//               paddingVertical: 4,
+//               shadowColor: '#000',
+//               shadowOpacity: 0.08,
+//               shadowRadius: 3,
+//               shadowOffset: { width: 0, height: 1 },
+//             }}
+//           >
+//             <Ionicons name={pal.icon} size={12} color={pal.text} style={{ marginRight: 4 }} />
+//             <Text style={{ fontSize: 11, fontWeight: '700', color: pal.text }}>{badge}</Text>
+//           </View>
+//         </View>
+
+//         <View style={{ paddingHorizontal: 10, paddingVertical: 8 }}>
+//           <Text className="text-[14px] font-semibold text-gray-900" numberOfLines={1}>
+//             {item.title}
+//           </Text>
+
+//           {/* concise location */}
+//           <View className="flex-row items-center mt-1">
+//             <Ionicons name="location-outline" size={12} color="#6b7280" />
+//             <Text className="text-[11px] text-gray-600 ml-1" numberOfLines={1}>
+//               {locLabel}
+//             </Text>
+//           </View>
+
+//           <View className="flex-row items-center mt-2">
+//             <View className="px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 mr-1.5">
+//               <Text className="text-indigo-700 text-[10px] font-semibold">{currency(item.rentPrice)}/mo</Text>
+//             </View>
+//             <View className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">
+//               <Text className="text-emerald-700 text-[10px] font-semibold">{item.propertyType}</Text>
+//             </View>
+//           </View>
+//         </View>
+//       </TouchableOpacity>
+//     );
+//   };
+
+//   if (loading) {
+//     return (
+//       <View className="flex-1 items-center justify-center bg-gray-50">
+//         <ActivityIndicator />
+//         <Text className="mt-2 text-gray-600">Loading…</Text>
+//       </View>
+//     );
+//   }
+
+//   return (
+//     <View className="flex-1 mt-20 bg-[#f7f9fc]">
+//       {/* Header: Back + Search */}
+//       <View className={`${Platform.OS === 'android' ? 'pt-8' : 'pt-12'} pb-3 px-4 bg-white border-b border-gray-100`}>
+//         <View className="flex-row items-center justify-between mb-2">
+//           <View style={{ width: 40 }} /> 
+//           <Text className="text-lg font-extrabold text-gray-900">Discover</Text>
+//           <View style={{ width: 40 }} />
+//         </View>
+
+//         <View
+//           className="flex-row items-center"
+//           style={{
+//             backgroundColor: '#f1f5f9',
+//             borderRadius: 14,
+//             paddingHorizontal: 10,
+//             paddingVertical: Platform.OS === 'android' ? 6 : 8,
+//             borderWidth: 1,
+//             borderColor: '#e5e7eb',
+//           }}
+//         >
+//           <Ionicons name="search" size={18} color="#6b7280" />
+//           <TextInput
+//             value={search}
+//             onChangeText={setSearch}
+//             placeholder="Search properties, locations…"
+//             className="flex-1 ml-2"
+//             style={{ fontSize: 14 }}
+//             onSubmitEditing={onRefresh}
+//             returnKeyType="search"
+//           />
+//           {search ? (
+//             <TouchableOpacity
+//               onPress={() => {
+//                 setSearch('');
+//                 onRefresh();
+//               }}
+//             >
+//               <Ionicons name="close-circle" size={18} color="#9ca3af" />
+//             </TouchableOpacity>
+//           ) : null}
+//         </View>
+
+//         <FiltersRow
+//           typeFilter={typeFilter}
+//           setTypeFilter={setTypeFilter}
+//           priceFilter={priceFilter}
+//           setPriceFilter={setPriceFilter}
+//           onApply={() => fetchPage(1, true).then(() => setPage(1))}
+//         />
+//       </View>
+
+//       <FlatList
+//         data={items}
+//         keyExtractor={(it) => it._id}
+//         renderItem={renderItem}
+//         numColumns={2}
+//         columnWrapperStyle={{ justifyContent: 'space-between', paddingHorizontal: 12 }}
+//         contentContainerStyle={{ paddingTop: 10, paddingBottom: 16 }}
+//         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+//         onEndReachedThreshold={0.3}
+//         onEndReached={loadMore}
+//         ListFooterComponent={loadingMore ? (<View className="py-4 items-center"><ActivityIndicator /></View>) : null}
+//       />
+//     </View>
+//   );
+// }
+
+
+
+
 export default function PropertyList() {
   const navigation = useNavigation();
 
@@ -637,9 +856,10 @@ export default function PropertyList() {
   }, [loadingMore, loading, page, pages, fetchPage]);
 
   const onCardPress = (item) => {
-    navigation.navigate('PropertyDetail', { property: item }); // 👉 go to detail
+    navigation.navigate('PropertyDetail', { property: item }); // 👉 go to detail (unchanged)
   };
 
+  // --- UI: card renderer (visual tweaks only) ---
   const renderItem = ({ item, index }) => {
     const img = ensureAbsolute(item?.images?.[0]?.url || item?.images?.[0]);
     const badge = item?.ecoBadge || 'Unverified';
@@ -653,27 +873,33 @@ export default function PropertyList() {
         className="rounded-2xl overflow-hidden"
         style={{
           width: '48%',
-          marginTop: index < 2 ? 0 : 12,
+          marginTop: index < 2 ? 4 : 12, // tighter top margin for first row
           backgroundColor: '#fff',
-          borderColor: '#eef2f7',
+          borderColor: '#e9eef5',
           borderWidth: 1,
+          // softer, premium shadow
           shadowColor: '#000',
-          shadowOpacity: 0.06,
-          shadowRadius: 8,
-          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.05,
+          shadowRadius: 10,
+          shadowOffset: { width: 0, height: 3 },
           elevation: 2,
         }}
       >
+        {/* Image area */}
         <View style={{ position: 'relative' }}>
           {img ? (
-            <Image source={{ uri: img }} style={{ width: '100%', height: 120 }} resizeMode="cover" />
+            <Image
+              source={{ uri: img }}
+              style={{ width: '100%', height: 130, backgroundColor: '#f3f4f6' }}
+              resizeMode="cover"
+            />
           ) : (
-            <View style={{ width: '100%', height: 120 }} className="bg-gray-100 items-center justify-center">
+            <View style={{ width: '100%', height: 130 }} className="bg-gray-100 items-center justify-center">
               <Ionicons name="image-outline" size={18} color="#9ca3af" />
             </View>
           )}
 
-          {/* eco badge chip */}
+          {/* Eco badge chip (smaller & cleaner) */}
           <View
             style={{
               position: 'absolute',
@@ -688,8 +914,8 @@ export default function PropertyList() {
               paddingHorizontal: 8,
               paddingVertical: 4,
               shadowColor: '#000',
-              shadowOpacity: 0.08,
-              shadowRadius: 3,
+              shadowOpacity: 0.06,
+              shadowRadius: 4,
               shadowOffset: { width: 0, height: 1 },
             }}
           >
@@ -698,6 +924,7 @@ export default function PropertyList() {
           </View>
         </View>
 
+        {/* Body */}
         <View style={{ paddingHorizontal: 10, paddingVertical: 8 }}>
           <Text className="text-[14px] font-semibold text-gray-900" numberOfLines={1}>
             {item.title}
@@ -711,12 +938,17 @@ export default function PropertyList() {
             </Text>
           </View>
 
+          {/* chips */}
           <View className="flex-row items-center mt-2">
             <View className="px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 mr-1.5">
-              <Text className="text-indigo-700 text-[10px] font-semibold">{currency(item.rentPrice)}/mo</Text>
+              <Text className="text-indigo-700 text-[10px] font-semibold">
+                {currency(item.rentPrice)}/mo
+              </Text>
             </View>
             <View className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">
-              <Text className="text-emerald-700 text-[10px] font-semibold">{item.propertyType}</Text>
+              <Text className="text-emerald-700 text-[10px] font-semibold">
+                {item.propertyType}
+              </Text>
             </View>
           </View>
         </View>
@@ -734,24 +966,28 @@ export default function PropertyList() {
   }
 
   return (
-    <View className="flex-1 mt-20 bg-[#f7f9fc]">
-      {/* Header: Back + Search */}
-      <View className={`${Platform.OS === 'android' ? 'pt-8' : 'pt-12'} pb-3 px-4 bg-white border-b border-gray-100`}>
+    <View className="flex-1 mt-14 bg-[#f7f9fc]">
+      {/* Header: centered title + compact search (structure unchanged, styling improved) */}
+      <View
+        className={`${Platform.OS === 'android' ? 'pt-8' : 'pt-12'} pb-3 px-4 bg-white border-b border-gray-100`}
+      >
+        {/* Title row kept centered visually */}
         <View className="flex-row items-center justify-between mb-2">
-          <View style={{ width: 40 }} /> 
+          <View style={{ width: 40 }} />
           <Text className="text-lg font-extrabold text-gray-900">Discover</Text>
           <View style={{ width: 40 }} />
         </View>
 
+        {/* Search input — smaller height, cleaner contrast */}
         <View
           className="flex-row items-center"
           style={{
-            backgroundColor: '#f1f5f9',
+            backgroundColor: '#F8FAFC',
             borderRadius: 14,
             paddingHorizontal: 10,
-            paddingVertical: Platform.OS === 'android' ? 6 : 8,
+            paddingVertical: Platform.OS === 'android' ? 6 : 7,
             borderWidth: 1,
-            borderColor: '#e5e7eb',
+            borderColor: '#E5E7EB',
           }}
         >
           <Ionicons name="search" size={18} color="#6b7280" />
@@ -770,12 +1006,14 @@ export default function PropertyList() {
                 setSearch('');
                 onRefresh();
               }}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
             >
               <Ionicons name="close-circle" size={18} color="#9ca3af" />
             </TouchableOpacity>
           ) : null}
         </View>
 
+        {/* Filters row — same logic/props; style refined inside FiltersRow if you want */}
         <FiltersRow
           typeFilter={typeFilter}
           setTypeFilter={setTypeFilter}
@@ -785,6 +1023,7 @@ export default function PropertyList() {
         />
       </View>
 
+      {/* Grid list */}
       <FlatList
         data={items}
         keyExtractor={(it) => it._id}
@@ -795,7 +1034,13 @@ export default function PropertyList() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         onEndReachedThreshold={0.3}
         onEndReached={loadMore}
-        ListFooterComponent={loadingMore ? (<View className="py-4 items-center"><ActivityIndicator /></View>) : null}
+        ListFooterComponent={
+          loadingMore ? (
+            <View className="py-4 items-center">
+              <ActivityIndicator />
+            </View>
+          ) : null
+        }
       />
     </View>
   );
