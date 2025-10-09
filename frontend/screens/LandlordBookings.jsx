@@ -1,309 +1,5 @@
-// import React, { useEffect, useState, useCallback } from 'react';
-// import {
-//   View,
-//   Text,
-//   FlatList,
-//   RefreshControl,
-//   TouchableOpacity,
-//   ActivityIndicator,
-//   Alert,
-// } from 'react-native';
-// import AsyncStorage from '@react-native-async-storage/async-storage';
-// import { useRoute } from '@react-navigation/native';
-// import { Ionicons } from '@expo/vector-icons'; // UI-only: icons
-// import { fetchBookings, patchBookingStatus, postBookingReply } from '../lib/api';
-// import ReplyModal from './ReplyModal';
 
-// const GREEN = '#3cc172';
 
-// export default function LandlordBookings({ landlordId: landlordIdProp }) {
-//   const route = useRoute();
-//   const [landlordId, setLandlordId] = useState(
-//     landlordIdProp || route?.params?.landlordId || ''
-//   );
-
-//   const [items, setItems] = useState([]);
-//   const [status, setStatus] = useState('');
-//   const [page, setPage] = useState(1);
-//   const [pages, setPages] = useState(1);
-//   const [loading, setLoading] = useState(false);
-//   const [refreshing, setRefreshing] = useState(false);
-
-//   const [replyOpen, setReplyOpen] = useState(false);
-//   const [replyBooking, setReplyBooking] = useState(null);
-
-//   useEffect(() => {
-//     // last-resort fallback: read landlordId from auth_user in storage (logic unchanged)
-//     (async () => {
-//       if (landlordId) return;
-//       try {
-//         const raw = await AsyncStorage.getItem('auth_user');
-//         const user = raw ? JSON.parse(raw) : null;
-//         if (user?._id) setLandlordId(user._id);
-//       } catch {}
-//     })();
-//   }, [landlordId]);
-
-//   const load = useCallback(async (p = 1, append = false) => {
-//     if (!landlordId) return;
-//     try {
-//       if (!append) setLoading(true);
-//       const { data, page: cur, pages: totalPages } = await fetchBookings({
-//         role: 'landlord',
-//         landlordId,
-//         status: status || undefined,
-//         page: p,
-//         limit: 20,
-//       });
-//       setPage(cur || 1);
-//       setPages(totalPages || 1);
-//       setItems(prev => (append ? [...prev, ...data] : data));
-//     } catch (e) {
-//       console.log('load landlord bookings error:', e);
-//       Alert.alert('Could not load', e.message || 'Please try again.');
-//     } finally {
-//       setLoading(false);
-//       setRefreshing(false);
-//     }
-//   }, [landlordId, status]);
-
-//   useEffect(() => { load(1, false); }, [load, landlordId, status]);
-
-//   const onRefresh = () => { setRefreshing(true); load(1, false); };
-//   const onEndReached = () => { if (page < pages && !loading) load(page + 1, true); };
-
-//   const updateStatus = async (id, next) => {
-//     try {
-//       await patchBookingStatus(id, next);
-//       setItems(prev => prev.map(x => (x._id === id ? { ...x, status: next } : x)));
-//     } catch (e) {
-//       Alert.alert('Update failed', e.message || 'Please try again.');
-//     }
-//   };
-
-//   const openReply = (booking) => { setReplyBooking(booking); setReplyOpen(true); };
-//   const sendReply = async (body) => {
-//     await postBookingReply(replyBooking._id, body);
-//     setItems(prev => prev.map(x => (x._id === replyBooking._id ? { ...x, status: 'contacted' } : x)));
-//   };
-
-//   // ---------- UI helpers (no logic change) ----------
-//   const statusChipBg = (s) => {
-//     if (s === 'contacted') return '#e5f0ff';
-//     if (s === 'closed') return '#ffe9e9';
-//     if (s === 'new') return '#f3f4f6';
-//     return '#f3f4f6';
-//   };
-//   const statusChipText = (s) => {
-//     if (!s) return 'New';
-//     return s[0].toUpperCase() + s.slice(1);
-//   };
-
-//   // ---------- Header + Filters (visual only) ----------
-//   const Header = (
-//     <View className="px-4 pt-5 pb-2 bg-white border-b border-gray-100">
-//       <Text className="text-2xl font-extrabold text-gray-900">Bookings</Text>
-//       <Text className="text-gray-500 mt-1">Manage inquiries for your properties</Text>
-
-//       <View className="flex-row mt-4" style={{ gap: 8 }}>
-//         {[
-//           { key: '', label: 'All', icon: 'apps' },
-//           { key: 'new', label: 'New', icon: 'mail-unread' },
-//           { key: 'contacted', label: 'Contacted', icon: 'chatbubble-ellipses' },
-//           { key: 'closed', label: 'Closed', icon: 'checkmark-done' },
-//         ].map((opt) => {
-//           const active = status === opt.key;
-//           return (
-//             <TouchableOpacity
-//               key={opt.key || 'all'}
-//               onPress={() => setStatus(opt.key)}
-//               className="flex-row items-center px-3 py-2 rounded-full border"
-//               style={{
-//                 backgroundColor: active ? `${GREEN}22` : '#fff',
-//                 borderColor: active ? GREEN : '#e5e7eb',
-//               }}
-//               accessibilityRole="button"
-//               accessibilityLabel={`Filter ${opt.label}`}
-//             >
-//               <Ionicons name={opt.icon} size={14} color={active ? GREEN : '#6b7280'} />
-//               <Text
-//                 className="ml-1.5 text-[12px] font-semibold"
-//                 style={{ color: active ? GREEN : '#374151' }}
-//               >
-//                 {opt.label}
-//               </Text>
-//             </TouchableOpacity>
-//           );
-//         })}
-//       </View>
-//     </View>
-//   );
-
-//   const renderItem = ({ item }) => {
-//     const p = item.property || {};
-//     return (
-//       <View
-//         className="mx-4 mt-3 rounded-2xl bg-white p-4"
-//         // Subtle card elevation (UI-only)
-//         style={{
-//           shadowColor: '#000',
-//           shadowOpacity: 0.06,
-//           shadowRadius: 10,
-//           shadowOffset: { width: 0, height: 4 },
-//           elevation: 2,
-//         }}
-//       >
-//         {/* Title + status */}
-//         <View className="flex-row items-start justify-between">
-//           <View className="flex-1 pr-3">
-//             <Text className="text-gray-900 font-extrabold" numberOfLines={1}>
-//               {p.title || 'Property'}
-//             </Text>
-//             <Text className="text-gray-500 text-[12px]" numberOfLines={1}>
-//               {p.address || '—'}
-//             </Text>
-//           </View>
-
-//           <View
-//             className="px-2 py-1 rounded-full border"
-//             style={{ backgroundColor: statusChipBg(item.status), borderColor: '#e5e7eb' }}
-//           >
-//             <Text className="text-[11px] text-gray-700">
-//               {statusChipText(item.status)}
-//             </Text>
-//           </View>
-//         </View>
-
-//         {/* Meta */}
-//         <View className="mt-3">
-//           <View className="flex-row items-center">
-//             <Ionicons name="person-circle" size={16} color="#6b7280" />
-//             <Text className="ml-1.5 text-[12px] text-gray-700" numberOfLines={1}>
-//               {item.name}
-//               {item.email ? ` · ${item.email}` : ''}
-//               {item.phone ? ` · ${item.phone}` : ''}
-//             </Text>
-//           </View>
-
-//           {item.preferredDate ? (
-//             <View className="flex-row items-center mt-1.5">
-//               <Ionicons name="calendar-outline" size={16} color="#6b7280" />
-//               <Text className="ml-1.5 text-[12px] text-gray-700">
-//                 Preferred: {new Date(item.preferredDate).toLocaleString()}
-//               </Text>
-//             </View>
-//           ) : null}
-
-//           {item.message ? (
-//             <View className="flex-row items-start mt-1.5">
-//               <Ionicons
-//                 name="chatbubble-ellipses-outline"
-//                 size={16}
-//                 color="#6b7280"
-//                 style={{ marginTop: 1 }}
-//               />
-//               <Text className="ml-1.5 text-[12px] text-gray-700">{item.message}</Text>
-//             </View>
-//           ) : null}
-//         </View>
-
-//         {/* Actions */}
-//         <View className="flex-row items-center justify-between mt-3">
-//           <Text className="text-[11px] text-gray-500">
-//             Received: {new Date(item.createdAt).toLocaleString()}
-//           </Text>
-
-//           <View className="flex-row" style={{ gap: 8 }}>
-//             <TouchableOpacity
-//               onPress={() => openReply(item)}
-//               className="flex-row items-center px-3 py-2 rounded-full"
-//               style={{ backgroundColor: '#e8fff2' }}
-//               accessibilityRole="button"
-//               accessibilityLabel="Reply to requester"
-//             >
-//               <Ionicons name="send" size={14} color="#0f766e" />
-//               <Text className="ml-1 text-[12px] font-semibold" style={{ color: '#0f766e' }}>
-//                 Reply
-//               </Text>
-//             </TouchableOpacity>
-
-//             {item.status !== 'contacted' && (
-//               <TouchableOpacity
-//                 onPress={() => updateStatus(item._id, 'contacted')}
-//                 className="flex-row items-center px-3 py-2 rounded-full"
-//                 style={{ backgroundColor: '#e5f0ff' }}
-//                 accessibilityRole="button"
-//                 accessibilityLabel="Mark as contacted"
-//               >
-//                 <Ionicons name="checkmark-circle-outline" size={14} color="#1d4ed8" />
-//                 <Text className="ml-1 text-[12px] font-semibold" style={{ color: '#1d4ed8' }}>
-//                   Mark contacted
-//                 </Text>
-//               </TouchableOpacity>
-//             )}
-
-//             {item.status !== 'closed' && (
-//               <TouchableOpacity
-//                 onPress={() => updateStatus(item._id, 'closed')}
-//                 className="flex-row items-center px-3 py-2 rounded-full"
-//                 style={{ backgroundColor: '#ffe9e9' }}
-//                 accessibilityRole="button"
-//                 accessibilityLabel="Close request"
-//               >
-//                 <Ionicons name="close-circle-outline" size={14} color="#b91c1c" />
-//                 <Text className="ml-1 text-[12px] font-semibold" style={{ color: '#b91c1c' }}>
-//                   Close
-//                 </Text>
-//               </TouchableOpacity>
-//             )}
-//           </View>
-//         </View>
-//       </View>
-//     );
-//   };
-
-//   return (
-//     <View className="flex-1 bg-gray-50">
-//       {Header}
-
-//       {!landlordId ? (
-//         <View className="flex-1 items-center justify-center px-6">
-//           <Ionicons name="alert-circle-outline" size={28} color="#9ca3af" />
-//           <Text className="mt-2 text-gray-500 text-center">No landlord ID found.</Text>
-//         </View>
-//       ) : loading && items.length === 0 ? (
-//         <View className="flex-1 items-center justify-center">
-//           <ActivityIndicator />
-//           <Text className="mt-2 text-gray-500">Loading bookings…</Text>
-//         </View>
-//       ) : (
-//         <FlatList
-//           data={items}
-//           keyExtractor={(it) => String(it._id)}
-//           renderItem={renderItem}
-//           onEndReached={onEndReached}
-//           onEndReachedThreshold={0.4}
-//           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-//           ListEmptyComponent={
-//             <View className="items-center mt-16">
-//               <Ionicons name="file-tray-outline" size={32} color="#9ca3af" />
-//               <Text className="mt-2 text-gray-500">No requests.</Text>
-//             </View>
-//           }
-//           contentContainerStyle={{ paddingBottom: 24 }}
-//         />
-//       )}
-
-//       <ReplyModal
-//         visible={replyOpen}
-//         booking={replyBooking}
-//         onClose={() => setReplyOpen(false)}
-//         onSend={sendReply}
-//       />
-//     </View>
-//   );
-// }
-// screens/LandlordBookings.js
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
@@ -313,6 +9,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Animated,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -320,7 +17,21 @@ import { Ionicons } from '@expo/vector-icons';
 import { fetchBookings, patchBookingStatus, postBookingReply } from '../lib/api';
 import ReplyModal from './ReplyModal';
 
+// Enhanced color palette for professional look
 const GREEN = '#3cc172';
+const COLORS = {
+  primary: GREEN,
+  background: '#f8fafc',
+  surface: '#ffffff',
+  textPrimary: '#1f2937',
+  textSecondary: '#6b7280',
+  textTertiary: '#9ca3af',
+  border: '#e5e7eb',
+  success: '#10b981',
+  warning: '#f59e0b',
+  error: '#ef4444',
+  info: '#3b82f6',
+};
 
 export default function LandlordBookings({ landlordId: landlordIdProp }) {
   const navigation = useNavigation();
@@ -338,6 +49,17 @@ export default function LandlordBookings({ landlordId: landlordIdProp }) {
 
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyBooking, setReplyBooking] = useState(null);
+
+  // Animation values
+  const fadeAnim = useState(new Animated.Value(0))[0];
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 400,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   useEffect(() => {
     // last-resort fallback: read landlordId from auth_user in storage
@@ -394,22 +116,43 @@ export default function LandlordBookings({ landlordId: landlordIdProp }) {
     setItems(prev => prev.map(x => (x._id === replyBooking._id ? { ...x, status: 'contacted' } : x)));
   };
 
-  // Header with back + pill filters (different style than MyBookings)
+  // Enhanced status chip background colors
+  const statusChipConfig = (s) => {
+    const configs = {
+      new: { bg: '#fef3c7', text: '#92400e', icon: 'mail-unread', label: 'New' },
+      contacted: { bg: '#dbeafe', text: '#1e40af', icon: 'chatbubble-ellipses', label: 'Contacted' },
+      closed: { bg: '#fee2e2', text: '#dc2626', icon: 'checkmark-done', label: 'Closed' },
+    };
+    return configs[s] || { bg: '#f3f4f6', text: '#374151', icon: 'help', label: 'Unknown' };
+  };
+
+  // Enhanced Header with modern design
   const Header = (
-    <View className="px-4 pt-5 pb-2 bg-white border-b border-gray-100">
-      <View className="flex-row items-center mb-3">
+    <Animated.View 
+      style={{ opacity: fadeAnim }}
+      className="px-6 pt-12 pb-4 bg-white border-b"
+      style={{ borderBottomColor: COLORS.border, borderBottomWidth: 1 }}
+    >
+      <View className="flex-row items-center mb-4">
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          className="w-10 h-10 rounded-xl items-center justify-center bg-gray-50"
+          className="w-12 h-12 rounded-2xl items-center justify-center bg-gray-50 active:bg-gray-100"
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          <Ionicons name="chevron-back" size={22} color="#111827" />
+          <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text className="ml-2 text-2xl font-extrabold text-gray-900">Bookings (Landlord)</Text>
+        <View className="ml-3 flex-1">
+          <Text className="text-2xl font-bold" style={{ color: COLORS.textPrimary }}>
+            Booking Requests
+          </Text>
+          <Text className="text-base mt-1" style={{ color: COLORS.textSecondary }}>
+            Manage property inquiries
+          </Text>
+        </View>
       </View>
-      <Text className="text-gray-500">Requests sent to your properties</Text>
 
+      {/* Enhanced Filter Pills */}
       <View className="flex-row mt-4" style={{ gap: 8 }}>
         {[
           { key: '', label: 'All', icon: 'apps' },
@@ -422,18 +165,27 @@ export default function LandlordBookings({ landlordId: landlordIdProp }) {
             <TouchableOpacity
               key={opt.key || 'all'}
               onPress={() => setStatus(opt.key)}
-              className="flex-row items-center px-3 py-2 rounded-full border"
+              className="flex-row items-center px-4 py-3 rounded-2xl border"
               style={{
-                backgroundColor: active ? `${GREEN}22` : '#fff',
-                borderColor: active ? GREEN : '#e5e7eb',
+                backgroundColor: active ? COLORS.primary : COLORS.surface,
+                borderColor: active ? COLORS.primary : COLORS.border,
+                shadowColor: active ? COLORS.primary : '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: active ? 0.2 : 0.05,
+                shadowRadius: active ? 4 : 2,
+                elevation: active ? 3 : 1,
               }}
               accessibilityRole="button"
               accessibilityLabel={`Filter ${opt.label}`}
             >
-              <Ionicons name={opt.icon} size={14} color={active ? GREEN : '#6b7280'} />
+              <Ionicons 
+                name={opt.icon} 
+                size={16} 
+                color={active ? COLORS.surface : COLORS.textSecondary} 
+              />
               <Text
-                className="ml-1.5 text-[12px] font-semibold"
-                style={{ color: active ? GREEN : '#374151' }}
+                className="ml-2 text-sm font-semibold"
+                style={{ color: active ? COLORS.surface : COLORS.textPrimary }}
               >
                 {opt.label}
               </Text>
@@ -441,99 +193,163 @@ export default function LandlordBookings({ landlordId: landlordIdProp }) {
           );
         })}
       </View>
-    </View>
+    </Animated.View>
   );
 
-  const statusChipBg = (s) => {
-    if (s === 'contacted') return '#e5f0ff';
-    if (s === 'closed') return '#ffe9e9';
-    if (s === 'new') return '#f3f4f6';
-    return '#f3f4f6';
-  };
-
-  const renderItem = ({ item }) => {
+  const renderItem = ({ item, index }) => {
     const p = item.property || {};
+    const statusConfig = statusChipConfig(item.status);
+    
     return (
-      <View
-        className="mx-4 mt-3 rounded-2xl bg-white p-4"
+      <Animated.View
+        style={{
+          opacity: fadeAnim,
+          transform: [{
+            translateY: fadeAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [50, 0],
+            })
+          }]
+        }}
+        className="mx-5 my-2 rounded-3xl bg-white p-5"
         style={{
           shadowColor: '#000',
-          shadowOpacity: 0.06,
-          shadowRadius: 10,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: 2,
+          shadowOpacity: 0.08,
+          shadowRadius: 12,
+          shadowOffset: { width: 0, height: 6 },
+          elevation: 4,
+          borderWidth: 1,
+          borderColor: COLORS.border,
         }}
       >
-        {/* Title + status */}
-        <View className="flex-row items-start justify-between">
-          <View className="flex-1 pr-3">
-            <Text className="text-gray-900 font-extrabold" numberOfLines={1}>
-              {p.title || 'Property'}
-            </Text>
-            <Text className="text-gray-500 text-[12px]" numberOfLines={1}>
-              {p.address || '—'}
-            </Text>
+        {/* Header with Property Info and Status */}
+        <View className="flex-row items-start justify-between mb-4">
+          <View className="flex-1 pr-4">
+            <View className="flex-row items-center mb-2">
+              <Ionicons name="business" size={18} color={COLORS.primary} />
+              <Text className="ml-2 text-lg font-bold" style={{ color: COLORS.textPrimary }}>
+                {p.title || 'Property'}
+              </Text>
+            </View>
+            <View className="flex-row items-center">
+              <Ionicons name="location" size={14} color={COLORS.textTertiary} />
+              <Text className="ml-1.5 text-sm" style={{ color: COLORS.textSecondary }} numberOfLines={1}>
+                {p.address || 'Address not provided'}
+              </Text>
+            </View>
           </View>
 
           <View
-            className="px-2 py-1 rounded-full border"
-            style={{ backgroundColor: statusChipBg(item.status), borderColor: '#e5e7eb' }}
+            className="px-3 py-2 rounded-full flex-row items-center"
+            style={{ backgroundColor: statusConfig.bg }}
           >
-            <Text className="text-[11px] text-gray-700">
-              {item.status ? item.status[0].toUpperCase() + item.status.slice(1) : 'New'}
+            <Ionicons name={statusConfig.icon} size={12} color={statusConfig.text} />
+            <Text className="ml-1.5 text-xs font-semibold" style={{ color: statusConfig.text }}>
+              {statusConfig.label}
             </Text>
           </View>
         </View>
 
-        {/* Meta */}
-        <View className="mt-3">
+        {/* Customer Information */}
+        <View className="mb-4 p-3 rounded-2xl" style={{ backgroundColor: '#f8fafc' }}>
+          <View className="flex-row items-center mb-2">
+            <Ionicons name="person-circle" size={16} color={COLORS.primary} />
+            <Text className="ml-2 text-sm font-semibold" style={{ color: COLORS.textPrimary }}>
+              {item.name || 'No name provided'}
+            </Text>
+          </View>
+          
+          <View className="space-y-1">
+            {item.email && (
+              <View className="flex-row items-center">
+                <Ionicons name="mail" size={14} color={COLORS.textTertiary} />
+                <Text className="ml-2 text-xs" style={{ color: COLORS.textSecondary }}>
+                  {item.email}
+                </Text>
+              </View>
+            )}
+            
+            {item.phone && (
+              <View className="flex-row items-center">
+                <Ionicons name="call" size={14} color={COLORS.textTertiary} />
+                <Text className="ml-2 text-xs" style={{ color: COLORS.textSecondary }}>
+                  {item.phone}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Booking Details */}
+        <View className="mb-4 space-y-3">
+          {item.preferredDate && (
+            <View className="flex-row items-center">
+              <View className="w-8 h-8 rounded-full items-center justify-center" 
+                style={{ backgroundColor: '#e8f5e8' }}>
+                <Ionicons name="calendar" size={16} color={COLORS.primary} />
+              </View>
+              <View className="ml-3">
+                <Text className="text-xs font-medium" style={{ color: COLORS.textTertiary }}>
+                  Preferred Date
+                </Text>
+                <Text className="text-sm font-semibold" style={{ color: COLORS.textPrimary }}>
+                  {new Date(item.preferredDate).toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {item.message && (
+            <View className="flex-row items-start">
+              <View className="w-8 h-8 rounded-full items-center justify-center mt-1" 
+                style={{ backgroundColor: '#e8f5e8' }}>
+                <Ionicons name="chatbubble-ellipses" size={16} color={COLORS.primary} />
+              </View>
+              <View className="ml-3 flex-1">
+                <Text className="text-xs font-medium mb-1" style={{ color: COLORS.textTertiary }}>
+                  Message
+                </Text>
+                <Text className="text-sm leading-5" style={{ color: COLORS.textSecondary }}>
+                  {item.message}
+                </Text>
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* Footer with Timestamp and Actions */}
+        <View className="flex-row items-center justify-between pt-3 border-t" 
+          style={{ borderTopColor: COLORS.border, borderTopWidth: 1 }}>
           <View className="flex-row items-center">
-            <Ionicons name="person-circle" size={16} color="#6b7280" />
-            <Text className="ml-1.5 text-[12px] text-gray-700" numberOfLines={1}>
-              {item.name}
-              {item.email ? ` · ${item.email}` : ''}
-              {item.phone ? ` · ${item.phone}` : ''}
+            <Ionicons name="time" size={14} color={COLORS.textTertiary} />
+            <Text className="ml-1 text-xs" style={{ color: COLORS.textTertiary }}>
+              Received {new Date(item.createdAt).toLocaleDateString()}
             </Text>
           </View>
-
-          {item.preferredDate ? (
-            <View className="flex-row items-center mt-1.5">
-              <Ionicons name="calendar-outline" size={16} color="#6b7280" />
-              <Text className="ml-1.5 text-[12px] text-gray-700">
-                Preferred: {new Date(item.preferredDate).toLocaleString()}
-              </Text>
-            </View>
-          ) : null}
-
-          {item.message ? (
-            <View className="flex-row items-start mt-1.5">
-              <Ionicons
-                name="chatbubble-ellipses-outline"
-                size={16}
-                color="#6b7280"
-                style={{ marginTop: 1 }}
-              />
-              <Text className="ml-1.5 text-[12px] text-gray-700">{item.message}</Text>
-            </View>
-          ) : null}
-        </View>
-
-        {/* Actions */}
-        <View className="flex-row items-center justify-between mt-3">
-          <Text className="text-[11px] text-gray-500">
-            Received: {new Date(item.createdAt).toLocaleString()}
-          </Text>
 
           <View className="flex-row" style={{ gap: 8 }}>
             <TouchableOpacity
               onPress={() => openReply(item)}
-              className="flex-row items-center px-3 py-2 rounded-full"
-              style={{ backgroundColor: '#e8fff2' }}
+              className="flex-row items-center px-4 py-2 rounded-full"
+              style={{ 
+                backgroundColor: '#e8fff2',
+                shadowColor: COLORS.primary,
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 3,
+                elevation: 2,
+              }}
               accessibilityRole="button"
               accessibilityLabel="Reply to requester"
             >
-              <Ionicons name="send" size={14} color="#0f766e" />
-              <Text className="ml-1 text-[12px] font-semibold" style={{ color: '#0f766e' }}>
+              <Ionicons name="send" size={14} color={COLORS.primary} />
+              <Text className="ml-1.5 text-xs font-semibold" style={{ color: COLORS.primary }}>
                 Reply
               </Text>
             </TouchableOpacity>
@@ -541,14 +357,21 @@ export default function LandlordBookings({ landlordId: landlordIdProp }) {
             {item.status !== 'contacted' && (
               <TouchableOpacity
                 onPress={() => updateStatus(item._id, 'contacted')}
-                className="flex-row items-center px-3 py-2 rounded-full"
-                style={{ backgroundColor: '#e5f0ff' }}
+                className="flex-row items-center px-4 py-2 rounded-full"
+                style={{ 
+                  backgroundColor: '#e5f0ff',
+                  shadowColor: COLORS.info,
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 3,
+                  elevation: 2,
+                }}
                 accessibilityRole="button"
                 accessibilityLabel="Mark as contacted"
               >
-                <Ionicons name="checkmark-circle-outline" size={14} color="#1d4ed8" />
-                <Text className="ml-1 text-[12px] font-semibold" style={{ color: '#1d4ed8' }}>
-                  Mark contacted
+                <Ionicons name="checkmark-circle" size={14} color={COLORS.info} />
+                <Text className="ml-1.5 text-xs font-semibold" style={{ color: COLORS.info }}>
+                  Contacted
                 </Text>
               </TouchableOpacity>
             )}
@@ -556,36 +379,50 @@ export default function LandlordBookings({ landlordId: landlordIdProp }) {
             {item.status !== 'closed' && (
               <TouchableOpacity
                 onPress={() => updateStatus(item._id, 'closed')}
-                className="flex-row items-center px-3 py-2 rounded-full"
-                style={{ backgroundColor: '#ffe9e9' }}
+                className="flex-row items-center px-4 py-2 rounded-full"
+                style={{ 
+                  backgroundColor: '#ffe9e9',
+                  shadowColor: COLORS.error,
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 3,
+                  elevation: 2,
+                }}
                 accessibilityRole="button"
                 accessibilityLabel="Close request"
               >
-                <Ionicons name="close-circle-outline" size={14} color="#b91c1c" />
-                <Text className="ml-1 text-[12px] font-semibold" style={{ color: '#b91c1c' }}>
+                <Ionicons name="close-circle" size={14} color={COLORS.error} />
+                <Text className="ml-1.5 text-xs font-semibold" style={{ color: COLORS.error }}>
                   Close
                 </Text>
               </TouchableOpacity>
             )}
           </View>
         </View>
-      </View>
+      </Animated.View>
     );
   };
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1" style={{ backgroundColor: COLORS.background }}>
       {Header}
 
       {!landlordId ? (
         <View className="flex-1 items-center justify-center px-6">
-          <Ionicons name="alert-circle-outline" size={28} color="#9ca3af" />
-          <Text className="mt-2 text-gray-500 text-center">No landlord ID found.</Text>
+          <Ionicons name="alert-circle-outline" size={48} color={COLORS.textTertiary} />
+          <Text className="mt-4 text-lg font-medium text-center" style={{ color: COLORS.textSecondary }}>
+            No landlord ID found.
+          </Text>
+          <Text className="mt-2 text-sm text-center" style={{ color: COLORS.textTertiary }}>
+            Please check your account settings.
+          </Text>
         </View>
       ) : loading && items.length === 0 ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator />
-          <Text className="mt-2 text-gray-500">Loading bookings…</Text>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text className="mt-4 text-base" style={{ color: COLORS.textSecondary }}>
+            Loading bookings...
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -594,14 +431,27 @@ export default function LandlordBookings({ landlordId: landlordIdProp }) {
           renderItem={renderItem}
           onEndReached={onEndReached}
           onEndReachedThreshold={0.4}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          refreshControl={
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh}
+              colors={[COLORS.primary]}
+              tintColor={COLORS.primary}
+            />
+          }
           ListEmptyComponent={
-            <View className="items-center mt-16">
-              <Ionicons name="file-tray-outline" size={32} color="#9ca3af" />
-              <Text className="mt-2 text-gray-500">No requests.</Text>
+            <View className="items-center mt-20 px-6">
+              <Ionicons name="file-tray-outline" size={64} color={COLORS.textTertiary} />
+              <Text className="mt-4 text-lg font-medium text-center" style={{ color: COLORS.textSecondary }}>
+                No booking requests
+              </Text>
+              <Text className="mt-2 text-sm text-center" style={{ color: COLORS.textTertiary }}>
+                New requests will appear here when tenants contact you.
+              </Text>
             </View>
           }
-          contentContainerStyle={{ paddingBottom: 24 }}
+          contentContainerStyle={{ paddingVertical: 16 }}
+          showsVerticalScrollIndicator={false}
         />
       )}
 
