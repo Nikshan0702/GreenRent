@@ -326,8 +326,9 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { API_BASE }from '../config/api.js';
 
-const API_BASE = Platform.OS === 'ios' ? 'http://localhost:4000' : 'http://10.0.2.2:4000';
+// const API_BASE = Platform.OS === 'ios' ? 'http://localhost:4000' : 'http://10.0.2.2:4000';
 const OWNER_URL = (ownerId, page, limit) =>
   `${API_BASE}/PropertyOperations/owner/${ownerId}?page=${page}&limit=${limit}`;
 
@@ -364,6 +365,12 @@ export default function Myproperties() {
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const LIMIT = 12;
+
+
+  useEffect(() => {
+    console.log("[API_BASE]", API_BASE);
+  }, []);
+
 
   const clearSessionAndRedirect = useCallback(async (message = 'Session expired. Please sign in again.') => {
     try {

@@ -276,9 +276,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { configureGoogle, googleSignIn } from '../Auth/googleAuth.js';
+import { API_BASE }from '../config/api.js';
 
-// ---- CONFIG ----
-const API_BASE = 'http://10.0.2.2:4000';
 const LOGIN_URL = `${API_BASE}/UserOperations/login`;
 const GOOGLE_AUTH_URL = `${API_BASE}/UserOperations/google-auth`;
 const GREEN = '#3cc172';
@@ -294,6 +293,7 @@ const LoginScreen = ({ navigation }) => {
 
   useEffect(() => {
     configureGoogle();
+    console.log('[API_BASE]', API_BASE);
   }, []);
 
   const showError = useCallback((msg) => {

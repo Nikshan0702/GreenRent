@@ -2,13 +2,16 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, FlatList, ActivityIndicator, Platform, RefreshControl, Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_BASE }from '../config/api.js';
 
-const API_BASE = Platform.OS === "ios" ? "http://localhost:4000" : "http://10.0.2.2:4000";
+// const API_BASE = Platform.OS === "ios" ? "http://localhost:4000" : "http://10.0.2.2:4000";
 
 export default function BookingsInbox() {
   const [items, setItems] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+    useEffect(() => {console.log('[API_BASE]', API_BASE);}, []);
 
   const load = useCallback(async () => {
     try {

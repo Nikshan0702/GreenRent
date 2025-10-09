@@ -1422,107 +1422,107 @@ router.get("/bookings", async (req, res) => {
 
 
 // Your existing GET route (keep this)
-router.get("/bookings", async (req, res) => {
-  try {
-    const {
-      role,               // 'requester' | 'landlord'
-      email,              // for requester view
-      landlordId,         // for landlord view
-      status,             // 'new' | 'contacted' | 'closed'
-      type,               // 'contactRequest' | 'visitBooking'
-      q,                  // matches name, message, property title/address
-      page = "1",
-      limit = "20",
-    } = req.query;
+// router.get("/bookings", async (req, res) => {
+//   try {
+//     const {
+//       role,               // 'requester' | 'landlord'
+//       email,              // for requester view
+//       landlordId,         // for landlord view
+//       status,             // 'new' | 'contacted' | 'closed'
+//       type,               // 'contactRequest' | 'visitBooking'
+//       q,                  // matches name, message, property title/address
+//       page = "1",
+//       limit = "20",
+//     } = req.query;
 
-    const pageNum  = Math.max(parseInt(page, 10) || 1, 1);
-    const perPage  = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
-    const skip     = (pageNum - 1) * perPage;
+//     const pageNum  = Math.max(parseInt(page, 10) || 1, 1);
+//     const perPage  = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
+//     const skip     = (pageNum - 1) * perPage;
 
-    // base filter
-    const where = {};
-    if (role === "requester") {
-      if (!email) return res.status(400).json({ success: false, message: "email is required for requester role" });
-      where.email = email.trim().toLowerCase();
-    } else if (role === "landlord") {
-      if (!landlordId || !mongoose.Types.ObjectId.isValid(landlordId)) {
-        return res.status(400).json({ success: false, message: "landlordId is required for landlord role" });
-      }
-      where.landlordId = new mongoose.Types.ObjectId(landlordId);
-    } else {
-      return res.status(400).json({ success: false, message: "role must be requester or landlord" });
-    }
+//     // base filter
+//     const where = {};
+//     if (role === "requester") {
+//       if (!email) return res.status(400).json({ success: false, message: "email is required for requester role" });
+//       where.email = email.trim().toLowerCase();
+//     } else if (role === "landlord") {
+//       if (!landlordId || !mongoose.Types.ObjectId.isValid(landlordId)) {
+//         return res.status(400).json({ success: false, message: "landlordId is required for landlord role" });
+//       }
+//       where.landlordId = new mongoose.Types.ObjectId(landlordId);
+//     } else {
+//       return res.status(400).json({ success: false, message: "role must be requester or landlord" });
+//     }
 
-    if (status) where.status = status;
-    if (type) where.type = type;
+//     if (status) where.status = status;
+//     if (type) where.type = type;
 
-    // optional free-text: name/message and property fields
-    const or = [];
-    if (q && q.trim()) {
-      const rx = new RegExp(q.trim(), "i");
-      or.push({ name: rx }, { message: rx });
-    }
+//     // optional free-text: name/message and property fields
+//     const or = [];
+//     if (q && q.trim()) {
+//       const rx = new RegExp(q.trim(), "i");
+//       or.push({ name: rx }, { message: rx });
+//     }
 
-    const pipeline = [
-      { $match: where },
-      { $sort: { createdAt: -1 } },
-      { $lookup: {
-          from: "greenrentproperties",
-          localField: "propertyId",
-          foreignField: "_id",
-          as: "property",
-        }
-      },
-      { $unwind: "$property" },
-    ];
+//     const pipeline = [
+//       { $match: where },
+//       { $sort: { createdAt: -1 } },
+//       { $lookup: {
+//           from: "greenrentproperties",
+//           localField: "propertyId",
+//           foreignField: "_id",
+//           as: "property",
+//         }
+//       },
+//       { $unwind: "$property" },
+//     ];
 
-    if (or.length) {
-      pipeline.push({ $match: { $or: [
-        ...or,
-        { "property.title": { $regex: q, $options: "i" } },
-        { "property.address": { $regex: q, $options: "i" } },
-      ]}});
-    }
+//     if (or.length) {
+//       pipeline.push({ $match: { $or: [
+//         ...or,
+//         { "property.title": { $regex: q, $options: "i" } },
+//         { "property.address": { $regex: q, $options: "i" } },
+//       ]}});
+//     }
 
-    pipeline.push(
-      { $facet: {
-          items: [
-            { $skip: skip },
-            { $limit: perPage },
-            { $project: {
-                _id: 1, type: 1, propertyId: 1, landlordId: 1,
-                name: 1, email: 1, phone: 1, preferredDate: 1, message: 1,
-                status: 1, createdAt: 1, updatedAt: 1,
-                property: {
-                  _id: "$property._id",
-                  title: "$property.title",
-                  address: "$property.address",
-                  photos: "$property.photos",
-                  rentPrice: "$property.rentPrice",
-                }
-            }},
-          ],
-          total: [{ $count: "count" }],
-      }}
-    );
+//     pipeline.push(
+//       { $facet: {
+//           items: [
+//             { $skip: skip },
+//             { $limit: perPage },
+//             { $project: {
+//                 _id: 1, type: 1, propertyId: 1, landlordId: 1,
+//                 name: 1, email: 1, phone: 1, preferredDate: 1, message: 1,
+//                 status: 1, createdAt: 1, updatedAt: 1,
+//                 property: {
+//                   _id: "$property._id",
+//                   title: "$property.title",
+//                   address: "$property.address",
+//                   photos: "$property.photos",
+//                   rentPrice: "$property.rentPrice",
+//                 }
+//             }},
+//           ],
+//           total: [{ $count: "count" }],
+//       }}
+//     );
 
-    const [result] = await BookingModel.aggregate(pipeline);
-    const items = result?.items || [];
-    const total = result?.total?.[0]?.count || 0;
+//     const [result] = await BookingModel.aggregate(pipeline);
+//     const items = result?.items || [];
+//     const total = result?.total?.[0]?.count || 0;
 
-    return res.json({
-      success: true,
-      data: items,
-      page: pageNum,
-      limit: perPage,
-      total,
-      pages: Math.ceil(total / perPage),
-    });
-  } catch (e) {
-    console.error("list bookings error:", e);
-    return res.status(500).json({ success: false, message: "Failed to load bookings" });
-  }
-});
+//     return res.json({
+//       success: true,
+//       data: items,
+//       page: pageNum,
+//       limit: perPage,
+//       total,
+//       pages: Math.ceil(total / perPage),
+//     });
+//   } catch (e) {
+//     console.error("list bookings error:", e);
+//     return res.status(500).json({ success: false, message: "Failed to load bookings" });
+//   }
+// });
 
 
 // ---------- REPLY to a booking (landlord -> requester) ----------

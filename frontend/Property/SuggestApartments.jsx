@@ -6,8 +6,9 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { API_BASE }from '../config/api.js';
 
-const API_BASE = Platform.OS === "ios" ? "http://localhost:4000" : "http://10.0.2.2:4000";
+// const API_BASE = Platform.OS === "ios" ? "http://localhost:4000" : "http://10.0.2.2:4000";
 
 // Uses the reviews-driven suggest endpoint
 const SUGGEST_URL = (page, limit, params = {}) => {
@@ -80,6 +81,10 @@ export default function SuggestApartments() {
 
   const LIMIT = 16;
   const searchTimer = useRef(null);
+
+       useEffect(() => {
+          console.log("[API_BASE]", API_BASE);
+        }, []);
 
   const fetchPage = useCallback(
     async (p = 1, replace = false) => {

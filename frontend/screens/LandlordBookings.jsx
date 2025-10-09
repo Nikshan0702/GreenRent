@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
@@ -50,7 +48,7 @@ export default function LandlordBookings({ landlordId: landlordIdProp }) {
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyBooking, setReplyBooking] = useState(null);
 
-  // Animation values
+
   const fadeAnim = useState(new Animated.Value(0))[0];
 
   useEffect(() => {
