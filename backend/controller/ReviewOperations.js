@@ -926,7 +926,7 @@ import { LanguageServiceClient } from "@google-cloud/language";
 
 import PropertyModel from "../Models/Property.js";
 import BookingModel from "../Models/Booking.js";
-import { sendMailSafe } from "../utils/emailService.js";
+//import { sendMailSafe } from "../utils/emailService.js";
 // import { notifyUserPush } from "../utils/push.js"; // optional
 
 import dotenv from "dotenv";
