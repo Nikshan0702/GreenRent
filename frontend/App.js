@@ -19,6 +19,8 @@ import AddCertificate from './Property/AddCertificate';
 import PropertyDetail from './Property/PropertyDetail';
 import SuggestApartments from './Property/SuggestApartments';
 import ApartmentSuggestions from './Property/ApartmentSuggestions';
+import LandlordBookings from './screens/LandlordBookings';
+import MyBookings from './screens/MyBookings';
 
 
 const Stack = createNativeStackNavigator();
@@ -129,6 +131,21 @@ export default function App() {
           <Stack.Screen 
           name="ApartmentSuggestions" 
           component={ApartmentSuggestions}
+          options={{ headerShown: false }}
+          />
+
+
+
+          <Stack.Screen 
+          name="LandlordBookings" 
+          component={LandlordBookings}
+          options={{ headerShown: false }}
+          />
+
+
+          <Stack.Screen 
+          name="MyBookings" 
+          component={MyBookings}
           options={{ headerShown: false }}
           />
         

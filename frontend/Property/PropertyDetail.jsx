@@ -753,6 +753,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { API_BASE }from '../config/api.js';
 
 /** ============================================================
  * UI-THEMING ONLY — LOGIC UNCHANGED
@@ -765,7 +766,7 @@ const MUTED = '#6B7280';
 const CARD_BORDER = '#E5E7EB';
 const SURFACE = '#FFFFFF';
 
-const API_BASE = Platform.OS === 'ios' ? 'http://localhost:4000' : 'http://10.0.2.2:4000';
+// const API_BASE = Platform.OS === 'ios' ? 'http://localhost:4000' : 'http://10.0.2.2:4000';
 const REVIEW_BASE = `${API_BASE}/ReviewOperations`;
 
 const ensureAbsolute = (u) =>
@@ -852,6 +853,12 @@ export default function PropertyDetail() {
     inputRange: [-120, 0, 200],
     outputRange: [-10, 0, 0],
   });
+
+
+
+    useEffect(() => {
+      console.log("[API_BASE]", API_BASE);
+    }, []);
 
   return (
     <View className="flex-1" style={{ backgroundColor: SURFACE }}>

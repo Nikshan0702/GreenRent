@@ -317,8 +317,9 @@ import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 
 import EcoFeaturesSelector from "../Property/EcoFeaturesSelector";
+import { API_BASE }from '../config/api.js';
 
-const API_BASE = Platform.OS === "ios" ? "http://localhost:4000" : "http://10.0.2.2:4000";
+// const API_BASE = Platform.OS === "ios" ? "http://localhost:4000" : "http://10.0.2.2:4000";
 const OCR_URL = (propertyId) => `${API_BASE}/CertificateOperations/ocr/${propertyId}`;
 const DEL_CERT_URL = (propertyId) => `${API_BASE}/CertificateOperations/${propertyId}`;
 const ECO_URL = (propertyId) => `${API_BASE}/PropertyOperations/${propertyId}/eco`;
@@ -350,6 +351,10 @@ export default function AddCertificate() {
   const [ecoScore, setEcoScore] = useState(0);
   const [ecoBadge, setEcoBadge] = useState("Unverified");
   const [certificate, setCertificate] = useState(null);
+
+  useEffect(() => {
+    console.log("[API_BASE]", API_BASE);
+  }, []);
 
   const loadProperty = useCallback(async () => {
     if (!propertyId) return;

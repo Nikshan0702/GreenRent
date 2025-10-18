@@ -5,8 +5,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { API_BASE }from '../config/api.js';
 
-const API_BASE = Platform.OS === 'ios' ? 'http://localhost:4000' : 'http://10.0.2.2:4000';
+// const API_BASE = Platform.OS === 'ios' ? 'http://localhost:4000' : 'http://10.0.2.2:4000';
 
 const LIST_URL = (page, limit, q = '', type = '', minPrice = '', maxPrice = '') => {
   const qs = new URLSearchParams();
@@ -297,6 +298,11 @@ export default function PropertyList() {
     },
     [search, typeFilter, priceFilter]
   );
+
+     useEffect(() => {
+        console.log("[API_BASE]", API_BASE);
+      }, []);
+  
 
   useEffect(() => {
     (async () => {

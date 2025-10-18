@@ -429,9 +429,10 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import dp from '../GreenAssets/dp.jpeg';
+import { API_BASE }from '../config/api.js';
 
 // ---- CONFIG (unchanged) ----
-const API_BASE = 'http://10.0.2.2:4000'; // Android emulator
+// const API_BASE = 'http://10.0.2.2:4000'; // Android emulator
 const GET_USER_URL = `${API_BASE}/UserOperations/getUser`;
 const GREEN = '#3cc172';
 
@@ -442,7 +443,10 @@ const ProfileScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // ⬇️ existing sidebar animation (unchanged)
+  useEffect(() => {
+    console.log('[API_BASE]', API_BASE); 
+  }, []);
+
   const sidebarAnim = useRef(new Animated.Value(-300)).current;
 
   // ✅ subtle page entrance animation (UI-only, no logic change)

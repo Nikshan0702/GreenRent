@@ -11,7 +11,7 @@ import PropertyOperations from './controller/PropertyOperations.js';
 import CertificateOperations from './controller/CertificateOperations.js';
 import ReviewOperations from './controller/ReviewOperations.js';
 import PropertySuggestOperation from './controller/PropertySuggestOperation.js';
-import { verifyTransport } from '.';
+import { verifyTransport } from './utils/emailService.js';
 import 'dotenv/config';
 
 
