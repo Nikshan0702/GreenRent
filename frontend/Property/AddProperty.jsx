@@ -441,8 +441,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
+import { API_BASE }from '../config/api.js';
 
-const API_BASE = 'http://10.0.2.2:4000'; // Android emulator -> host(Mac)
+// const API_BASE = 'http://10.0.2.2:4000'; // Android emulator -> host(Mac)
 const CREATE_URL = `${API_BASE}/PropertyOperations/AddProp`;
 
 const PROPERTY_TYPES = ['Apartment', 'House', 'Studio', 'Villa', 'Townhouse'];
@@ -458,6 +459,11 @@ export default function AddProperty({ navigation }) {
   const [ptype, setPtype] = useState(PROPERTY_TYPES[0]);
   const [ownerId, setOwnerId] = useState('');
   const [images, setImages] = useState([]);
+
+
+   useEffect(() => {
+      console.log("[API_BASE]", API_BASE);
+    }, []);
 
   // ---- ui state ----
   const [isSubmitting, setIsSubmitting] = useState(false);
