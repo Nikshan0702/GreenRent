@@ -1,6 +1,10 @@
 {
   "dependencies": {
+<<<<<<< Updated upstream
     "@google-cloud/language": "^7.2.0",
+=======
+    "@google-cloud/language": "^7.2.1",
+>>>>>>> Stashed changes
     "@google-cloud/vision": "^5.3.3",
     "axios": "^1.11.0",
     "bcrypt": "^6.0.0",
@@ -10,7 +14,9 @@
     "google-auth-library": "^10.3.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.18.1",
+    "morgan": "^1.10.1",
     "multer": "^2.0.2",
+    "nodemailer": "^7.0.9",
     "react-native-dotenv": "^3.4.11"
   }
 }
