@@ -57,68 +57,76 @@ export default function RegisterScreen({ navigation }) {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = async () => {
-    setError('');
-    
-    // Basic validation (unchanged)
-    if (!formData.uname || !formData.email || !formData.password) {
-      setError('Please fill in all required fields');
-      Alert.alert('Validation Error', 'Please fill in all required fields');
-      return;
-    }
+const handleSubmit = async () => {
+  setError('');
+  
+  // Basic validation
+  if (!formData.uname || !formData.email || !formData.password) {
+    setError('Please fill in all required fields');
+    Alert.alert('Validation Error', 'Please fill in all required fields');
+    return;
+  }
 
-    // Email validation (unchanged)
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError('Please enter a valid email address');
-      Alert.alert('Validation Error', 'Please enter a valid email address');
-      return;
-    }
+  // Email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(formData.email)) {
+    setError('Please enter a valid email address');
+    Alert.alert('Validation Error', 'Please enter a valid email address');
+    return;
+  }
 
-    setLoading(true);
+  setLoading(true);
+  
+  try {
+    console.log('Attempting to register with:', formData);
     
-    try {
-      console.log('Attempting to register with:', formData);
-      const response = await axios.post(
-        'http://172.20.10.6:4000/UserOperations/register', 
-        formData,
-        {
-          headers: { 'Content-Type': 'application/json' },
-          timeout: 10000
-        }
-      );
-      
-      console.log('Registration response:', response.data);
-      
-      if (response.data.success) {
-        Alert.alert('Success', 'Registration Successful!');
-        navigation.navigate('loginScreen');
-      } else {
-        const errorMsg = response.data.message || "Registration failed";
-        setError(errorMsg);
-        Alert.alert('Registration Failed', errorMsg);
+    // Use API_BASE instead of hardcoded IP
+    const response = await axios.post(
+      `${API_BASE}/UserOperations/register`, 
+      formData,
+      {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 15000 // Increased timeout
       }
-    } catch (error) {
-      console.error('Registration error:', error);
-      if (error.response) {
-        const errorMsg = error.response.data?.message || 
-                         error.response.data?.error || 
-                         `Registration failed (Status: ${error.response.status})`;
-        setError(errorMsg);
-        Alert.alert('Registration Failed', errorMsg);
-      } else if (error.request) {
-        const errorMsg = "No response from server. Please try again later.";
-        setError(errorMsg);
-        Alert.alert('Network Error', errorMsg);
-      } else {
-        const errorMsg = "Error setting up registration request";
-        setError(errorMsg);
-        Alert.alert('Error', errorMsg);
-      }
-    } finally {
-      setLoading(false);
+    );
+    
+    console.log('Registration response:', response.data);
+    
+    if (response.data.success) {
+      Alert.alert('Success', 'Registration Successful!');
+      navigation.navigate('loginScreen');
+    } else {
+      const errorMsg = response.data.message || "Registration failed";
+      setError(errorMsg);
+      Alert.alert('Registration Failed', errorMsg);
     }
-  };
+  } catch (error) {
+    console.error('Registration error:', error);
+    
+    // More specific error handling
+    if (error.code === 'ECONNABORTED') {
+      const errorMsg = "Connection timeout. Please check your network connection.";
+      setError(errorMsg);
+      Alert.alert('Network Timeout', errorMsg);
+    } else if (error.response) {
+      const errorMsg = error.response.data?.message || 
+                       error.response.data?.error || 
+                       `Registration failed (Status: ${error.response.status})`;
+      setError(errorMsg);
+      Alert.alert('Registration Failed', errorMsg);
+    } else if (error.request) {
+      const errorMsg = "Cannot connect to server. Please make sure the backend is running.";
+      setError(errorMsg);
+      Alert.alert('Connection Error', errorMsg);
+    } else {
+      const errorMsg = "Error setting up registration request";
+      setError(errorMsg);
+      Alert.alert('Error', errorMsg);
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <KeyboardAvoidingView 
