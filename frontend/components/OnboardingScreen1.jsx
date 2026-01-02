@@ -36,7 +36,7 @@ export default function OnboardingScreens() {
     if (currentSlide < slides.length - 1) {
       setCurrentSlide(currentSlide + 1);
     } else {
-      navigation.navigate('OnboardingScreen');
+      navigation.navigate('loginScreen');
     }
   };
 

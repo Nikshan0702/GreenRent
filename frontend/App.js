@@ -21,6 +21,8 @@ import SuggestApartments from './Property/SuggestApartments';
 import ApartmentSuggestions from './Property/ApartmentSuggestions';
 import LandlordBookings from './screens/LandlordBookings';
 import MyBookings from './screens/MyBookings';
+import Wishlist from './Property/Wishlist';
+import Compare from './Property/Compare';
 
 
 const Stack = createNativeStackNavigator();
@@ -148,6 +150,21 @@ export default function App() {
           component={MyBookings}
           options={{ headerShown: false }}
           />
+
+
+
+
+        <Stack.Screen 
+          name="Wishlist" 
+          component={Wishlist}
+          options={{ headerShown: false }}
+        />
+
+        <Stack.Screen 
+          name="Compare" 
+          component={Compare}
+          options={{ headerShown: false }}
+        />
         
       </Stack.Navigator>
     </NavigationContainer>

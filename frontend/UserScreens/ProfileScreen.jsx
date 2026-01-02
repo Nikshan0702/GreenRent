@@ -410,7 +410,6 @@
 
 // export default ProfileScreen;
 
-
 import {
   View,
   Text,
@@ -430,6 +429,16 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import dp from '../GreenAssets/dp.jpeg';
 import { API_BASE }from '../config/api.js';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+// ---- Local COLORS palette (UI-only; no logic change) ----
+const COLORS = {
+  primary: '#16a34a',      // green-600
+  border: '#e5e7eb',       // gray-200
+  textPrimary: '#111827',  // gray-900
+  textSecondary: '#6b7280',// gray-600
+  textTertiary: '#9ca3af', // gray-400
+};
 
 // ---- CONFIG (unchanged) ----
 // const API_BASE = 'http://10.0.2.2:4000'; // Android emulator
@@ -490,72 +499,125 @@ const ProfileScreen = () => {
     ]).start();
   }, [pageFade, pageTranslate]);
 
-  // === SIDEBAR CONTENT (presentation only) ===
-  const Sidebar = () => (
-    <View className="flex-1 bg-white">
-      {/* Header */}
-      <View className="pt-14 pb-3 px-5 border-b border-gray-100 flex-row items-center justify-between">
-        <Text className="text-xl font-extrabold text-gray-900">Menu</Text>
-        <TouchableOpacity
-          onPress={toggleSidebar}
-          className="p-2 rounded-full bg-gray-100"
-          accessibilityRole="button"
-          accessibilityLabel="Close menu"
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          activeOpacity={0.8}
+  // ===== Sidebar (UI only) =====
+  const Sidebar = () => {
+    const insets = useSafeAreaInsets();
+
+    const ITEMS = [
+      { name: 'Home', icon: 'home', screen: 'Home', subtitle: 'Dashboard' },
+      { name: 'Profile', icon: 'person', screen: 'ProfileScreen' },
+      { name: 'Eco Tips', icon: 'leaf', screen: 'EcoTipsScreen' },
+
+    ];
+
+    return (
+      <View className="flex-1 bg-white">
+        {/* Header */}
+        <View
+          className="pb-5 px-6 border-b"
+          style={{ paddingTop: Math.max(insets.top, 16), borderBottomColor: COLORS.border }}
         >
-          <Ionicons name="close" size={22} color="#111827" />
-        </TouchableOpacity>
+          <View className="flex-row items-center justify-between">
+            <View>
+              <Text className="text-2xl font-bold" style={{ color: COLORS.textPrimary }}>
+                Menu
+              </Text>
+
+            </View>
+            <TouchableOpacity
+              onPress={toggleSidebar}
+              className="w-10 h-10 rounded-xl items-center justify-center bg-gray-50"
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Close menu"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="close" size={20} color={COLORS.textPrimary} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Items */}
+        <View className="px-4 mt-2">
+          {ITEMS.map((item, index) => (
+            <TouchableOpacity
+              key={item.name}
+              className="flex-row items-center py-4 rounded-2xl"
+              onPress={() => {
+                toggleSidebar();
+                navigation.navigate(item.screen);
+              }}
+              activeOpacity={0.9}
+              style={{ marginBottom: index === ITEMS.length - 1 ? 0 : 4, paddingHorizontal: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel={`Go to ${item.name}`}
+            >
+              <View
+                className="w-12 h-12 rounded-xl items-center justify-center"
+                style={{ backgroundColor: `${COLORS.primary}15` }}
+              >
+                <Ionicons name={item.icon} size={20} color={COLORS.primary} />
+              </View>
+              <View className="ml-4">
+                <Text className="text-base font-semibold" style={{ color: COLORS.textPrimary }}>
+                  {item.name}
+                </Text>
+                <Text className="text-sm mt-0.5" style={{ color: COLORS.textSecondary }}>
+                  {item.subtitle ?? `Go to ${item.name}`}
+                </Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={COLORS.textTertiary}
+                style={{ marginLeft: 'auto' }}
+              />
+            </TouchableOpacity>
+          ))}
+
+          {/* Logout (destructive) */}
+          <TouchableOpacity
+            className="flex-row items-center py-4 rounded-2xl"
+            onPress={handleLogout}
+            activeOpacity={0.9}
+            style={{ paddingHorizontal: 12, marginTop: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel="Log out"
+          >
+            <View className="w-12 h-12 rounded-xl items-center justify-center" style={{ backgroundColor: '#fee2e2' }}>
+              <Ionicons name="log-out-outline" size={20} color="#dc2626" />
+            </View>
+            <View className="ml-4">
+              <Text className="text-base font-semibold" style={{ color: '#dc2626' }}>
+                Log Out
+              </Text>
+              <Text className="text-sm mt-0.5" style={{ color: COLORS.textSecondary }}>
+                Sign out of your account
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Footer */}
+        <View
+          style={{
+            position: 'absolute',
+            left: 24,
+            right: 24,
+            bottom: Math.max(insets.bottom, 16),
+          }}
+        >
+     <View style={{ position: 'absolute', left: 24, right: 24, bottom: Math.max(insets.bottom, 16) }}>
+        <View className="p-4 rounded-2xl" style={{ backgroundColor: `${COLORS.primary}08` }}>
+          <Text className="text-sm font-medium text-center" style={{ color: COLORS.textSecondary }}>
+            Dattreo
+          </Text>
+        </View>
       </View>
-
-      {/* Items */}
-      <View className="px-5">
-        <TouchableOpacity
-          className="flex-row items-center py-4 border-b border-gray-100"
-          onPress={() => { toggleSidebar(); navigation.navigate('Home'); }}
-          accessibilityRole="button"
-        >
-          <View className="w-9 h-9 rounded-xl bg-green-50 items-center justify-center">
-            <Ionicons name="home" size={18} color={GREEN} />
-          </View>
-          <Text className="ml-3 text-base text-gray-900">Home</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          className="flex-row items-center py-4 border-b border-gray-100"
-          onPress={() => { toggleSidebar(); }}
-          accessibilityRole="button"
-        >
-          <View className="w-9 h-9 rounded-xl bg-green-50 items-center justify-center">
-            <Ionicons name="person" size={18} color={GREEN} />
-          </View>
-          <Text className="ml-3 text-base text-gray-900">Profile</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          className="flex-row items-center py-4 border-b border-gray-100"
-          onPress={() => { toggleSidebar(); navigation.navigate('Contact'); }}
-          accessibilityRole="button"
-        >
-          <View className="w-9 h-9 rounded-xl bg-green-50 items-center justify-center">
-            <Ionicons name="document-text" size={18} color={GREEN} />
-          </View>
-          <Text className="ml-3 text-base text-gray-900">Contact</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          className="flex-row items-center py-4"
-          onPress={handleLogout}
-          accessibilityRole="button"
-        >
-          <View className="w-9 h-9 rounded-xl bg-red-50 items-center justify-center">
-            <Ionicons name="log-out-outline" size={18} color={GREEN} />
-          </View>
-          <Text className="ml-3 text-base font-semibold text-red-600">Log Out</Text>
-        </TouchableOpacity>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   // === AUTH/PROFILE (logic unchanged) ===
   const handleLogout = useCallback(async () => {
@@ -667,29 +729,34 @@ const ProfileScreen = () => {
       <Animated.View style={{ flex: 1, opacity: pageFade, transform: [{ translateY: pageTranslate }] }}>
         <ScrollView
           className="flex-1"
-          contentContainerStyle={{ paddingBottom: 24 }}
+          contentContainerStyle={{ paddingBottom: 28 }}  // slightly more breathing room
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           {/* ===== Top App Bar (UI polish, same actions) ===== */}
-          <View className="flex-row items-center justify-between px-5 pt-2 pb-3 border-b border-gray-100">
+          <View
+            className="flex-row items-center justify-between border-b border-gray-100"
+            style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 10 }} // consistent paddings
+          >
             <TouchableOpacity
               onPress={toggleSidebar}
-              className="p-2 rounded-xl bg-gray-50"
+              className="rounded-xl"
+              style={{ padding: 10, backgroundColor: '#F3F4F6' }}
               accessibilityRole="button"
               accessibilityLabel="Open menu"
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.9}
             >
-              <Ionicons name="menu" size={22} color="#111827" />
+              <Ionicons name="menu" size={20} color="#111827" />
             </TouchableOpacity>
 
-            <View className="flex-row items-center mt-10">
-              <Ionicons name="person-circle" size={22} color={GREEN} />
-              <Text className="ml-2 text-lg font-semibold text-gray-900">Profile</Text>
+            <View className="flex-row items-center">
+              <Ionicons name="person-circle" size={20} color={GREEN} />
+              <Text className="ml-2 text-base font-semibold text-gray-900">Profile</Text>
             </View>
 
             {/* Placeholder for symmetry */}
-            <View style={{ width: 38, height: 38 }} />
+            <View style={{ width: 40, height: 40 }} />
           </View>
 
           {/* ===== Loading / Error ===== */}
@@ -727,20 +794,21 @@ const ProfileScreen = () => {
                   <View className="relative mb-4">
                     <Image source={dp} className="w-24 h-24 rounded-full" />
                     <TouchableOpacity
-                      className="absolute bottom-0 right-0 bg-[#3cc172] w-8 h-8 rounded-full items-center justify-center"
+                      className="absolute bottom-0 right-0 w-8 h-8 rounded-full items-center justify-center"
+                      style={{ backgroundColor: GREEN, borderWidth: 2, borderColor: '#fff' }} // crisp edge
                       onPress={() => navigation.navigate('EditProfile')}
                       accessibilityRole="button"
                       accessibilityLabel="Edit profile"
-                      activeOpacity={0.85}
+                      activeOpacity={0.9}
                     >
-                      <Ionicons name="pencil" size={14} color="white" />
+                      <Ionicons name="pencil" size={14} color="#fff" />
                     </TouchableOpacity>
                   </View>
 
-                  <Text className="text-gray-900 text-2xl font-extrabold mb-1">
+                  <Text className="text-gray-900 text-2xl font-extrabold mb-1 text-center">
                     {profile.uname || 'Guest User'}
                   </Text>
-                  <Text className="text-gray-600 text-sm mb-3">
+                  <Text className="text-gray-600 text-sm mb-3 text-center">
                     {profile.email || 'No email provided'}
                   </Text>
 
@@ -779,6 +847,14 @@ const ProfileScreen = () => {
                     className="flex-row items-center bg-gray-50 py-4 px-4 rounded-2xl mb-3 w-[48%] border border-gray-100"
                     onPress={() => navigation.navigate('Myproperties')}
                     accessibilityRole="button"
+                    activeOpacity={0.9}
+                    style={{
+                      shadowColor: '#000',
+                      shadowOpacity: 0.04,
+                      shadowRadius: 6,
+                      shadowOffset: { width: 0, height: 2 },
+                      elevation: 1,
+                    }}
                   >
                     <View className="w-10 h-10 rounded-xl bg-white border border-gray-100 items-center justify-center">
                       <Ionicons name="business" size={18} color={GREEN} />
@@ -790,6 +866,14 @@ const ProfileScreen = () => {
                     className="flex-row items-center bg-gray-50 py-4 px-4 rounded-2xl mb-3 w-[48%] border border-gray-100"
                     onPress={() => navigation.navigate('AddProperty')}
                     accessibilityRole="button"
+                    activeOpacity={0.9}
+                    style={{
+                      shadowColor: '#000',
+                      shadowOpacity: 0.04,
+                      shadowRadius: 6,
+                      shadowOffset: { width: 0, height: 2 },
+                      elevation: 1,
+                    }}
                   >
                     <View className="w-10 h-10 rounded-xl bg-white border border-gray-100 items-center justify-center">
                       <Ionicons name="calendar" size={18} color={GREEN} />
@@ -799,76 +883,79 @@ const ProfileScreen = () => {
 
                   <TouchableOpacity
                     className="flex-row items-center bg-gray-50 py-4 px-4 rounded-2xl mb-3 w-[48%] border border-gray-100"
-                    onPress={() => navigation.navigate('EcoTipsScreen')}
+                    onPress={() => navigation.navigate('Wishlist')}
                     accessibilityRole="button"
+                    activeOpacity={0.9}
+                    style={{
+                      shadowColor: '#000',
+                      shadowOpacity: 0.04,
+                      shadowRadius: 6,
+                      shadowOffset: { width: 0, height: 2 },
+                      elevation: 1,
+                    }}
                   >
                     <View className="w-10 h-10 rounded-xl bg-white border border-gray-100 items-center justify-center">
-                      <Ionicons name="bulb" size={18} color={GREEN} />
+                    <Ionicons name="heart" size={24} color={GREEN} />
                     </View>
-                    <Text className="text-gray-800 font-medium ml-3 text-sm">Eco Tips</Text>
+                    <Text className="text-gray-800 font-medium ml-3 text-sm">Wishlist</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    className="flex-row items-center bg-gray-50 py-4 px-4 rounded-2xl mb-3 w-[48%] border border-gray-100"
+                    onPress={() => navigation.navigate('Compare')}
+                    accessibilityRole="button"
+                    activeOpacity={0.9}
+                    style={{
+                      shadowColor: '#000',
+                      shadowOpacity: 0.04,
+                      shadowRadius: 6,
+                      shadowOffset: { width: 0, height: 2 },
+                      elevation: 1,
+                    }}
+                  >
+                    <View className="w-10 h-10 rounded-xl bg-white border border-gray-100 items-center justify-center">
+                    <Ionicons name="stats-chart-outline" size={24} color={GREEN} />
+                    </View>
+                    <Text className="text-gray-800 font-medium ml-3 text-sm">Compare</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     className="flex-row items-center bg-gray-50 py-4 px-4 rounded-2xl mb-3 w-[48%] border border-gray-100"
                     onPress={() => navigation.navigate('MyBookings')}
                     accessibilityRole="button"
+                    activeOpacity={0.9}
+                    style={{
+                      shadowColor: '#000',
+                      shadowOpacity: 0.04,
+                      shadowRadius: 6,
+                      shadowOffset: { width: 0, height: 2 },
+                      elevation: 1,
+                    }}
                   >
                     <View className="w-10 h-10 rounded-xl bg-white border border-gray-100 items-center justify-center">
-                    <Ionicons name="bookmark" size={24} color={GREEN} />
+                      <Ionicons name="calendar" size={24} color={GREEN} />
                     </View>
-                    <Text className="text-gray-800 font-medium ml-3 text-sm">MyBookings</Text>
-                  </TouchableOpacity>
-
-
-                  <TouchableOpacity
-                    className="flex-row items-center bg-gray-50 py-4 px-4 rounded-2xl mb-3 w-[48%] border border-gray-100"
-                    onPress={() => navigation.navigate('LandlordBookings')}
-                    accessibilityRole="button"
-                  >
-                    <View className="w-10 h-10 rounded-xl bg-white border border-gray-100 items-center justify-center">
-                    <Ionicons name="calendar" size={24} color={GREEN} />
-                    </View>
-                    <Text className="text-gray-800 font-medium ml-3 text-sm">Requests</Text>
+                    <Text className="text-gray-800 font-medium ml-3 text-sm">Bookings</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     className="flex-row items-center bg-gray-50 py-4 px-4 rounded-2xl mb-3 w-[48%] border border-gray-100"
                     onPress={() => navigation.navigate('LandlordBookings')}
                     accessibilityRole="button"
+                    activeOpacity={0.9}
+                    style={{
+                      shadowColor: '#000',
+                      shadowOpacity: 0.04,
+                      shadowRadius: 6,
+                      shadowOffset: { width: 0, height: 2 },
+                      elevation: 1,
+                    }}
                   >
                     <View className="w-10 h-10 rounded-xl bg-white border border-gray-100 items-center justify-center">
-                    <Ionicons name="mail" size={24} color={GREEN} />
+                      <Ionicons name="mail" size={24} color={GREEN} />
                     </View>
                     <Text className="text-gray-800 font-medium ml-3 text-sm">Inbox</Text>
                   </TouchableOpacity>
-
-
-                </View>
-              </View>
-
-              {/* ===== Stats banner ===== */}
-              <View
-                className="mx-5 mt-7 p-5 rounded-2xl border border-green-100"
-                style={{ backgroundColor: '#F0FDF4' /* green-50 */ }}
-              >
-                <Text className="text-[#16a34a] font-bold text-lg mb-4">Eco Benefits</Text>
-                <View className="flex-row justify-between">
-                  <View className="items-center">
-                    <Text className="text-[#16a34a] text-2xl font-extrabold">{profile.ecoRating}%</Text>
-                    <Text className="text-gray-600 text-xs text-center mt-1">Current Rating</Text>
-                  </View>
-                  <View className="items-center">
-                    <Text className="text-[#16a34a] text-2xl font-extrabold">12%</Text>
-                    <Text className="text-gray-600 text-xs text-center mt-1">Rent Discount</Text>
-                  </View>
-                  <View className="items-center">
-                    <Text className="text-[#16a34a] text-2xl font-extrabold">8</Text>
-                    <Text className="text-gray-600 text-xs text-center mt-1">Eco Points</Text>
-                  </View>
-                  <View className="items-center">
-                    <Text className="text-[#16a34a] text-2xl font-extrabold">4</Text>
-                    <Text className="text-gray-600 text-xs text-center mt-1">Badges</Text>
-                  </View>
                 </View>
               </View>
 
@@ -879,6 +966,14 @@ const ProfileScreen = () => {
                   onPress={handleLogout}
                   accessibilityRole="button"
                   accessibilityLabel="Sign out"
+                  activeOpacity={0.95}
+                  style={{
+                    shadowColor: '#000',
+                    shadowOpacity: 0.05,
+                    shadowRadius: 8,
+                    shadowOffset: { width: 0, height: 2 },
+                    elevation: 2,
+                  }}
                 >
                   <Text className="text-white font-semibold">Sign Out</Text>
                 </TouchableOpacity>
