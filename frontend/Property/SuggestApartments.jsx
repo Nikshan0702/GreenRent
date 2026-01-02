@@ -1,4 +1,3 @@
-// screens/SuggestApartments.js
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View, Text, FlatList, Image, TouchableOpacity, TextInput,
@@ -82,9 +81,9 @@ export default function SuggestApartments() {
   const LIMIT = 16;
   const searchTimer = useRef(null);
 
-       useEffect(() => {
-          console.log("[API_BASE]", API_BASE);
-        }, []);
+  useEffect(() => {
+    console.log("[API_BASE]", API_BASE);
+  }, []);
 
   const fetchPage = useCallback(
     async (p = 1, replace = false) => {
@@ -184,7 +183,7 @@ export default function SuggestApartments() {
         className="rounded-2xl overflow-hidden"
         style={{
           width: "48%",
-          marginTop: index < 2 ? 0 : 12,
+          marginTop: index < 2 ? 10 : 12,          // tighter top row
           backgroundColor: "#fff",
           borderColor: "#eef2f7",
           borderWidth: 1,
@@ -197,9 +196,9 @@ export default function SuggestApartments() {
       >
         <View style={{ position: "relative" }}>
           {img ? (
-            <Image source={{ uri: img }} style={{ width: "100%", height: 120 }} resizeMode="cover" />
+            <Image source={{ uri: img }} style={{ width: "100%", height: 126, backgroundColor: "#f3f4f6" }} resizeMode="cover" />
           ) : (
-            <View style={{ width: "100%", height: 120 }} className="bg-gray-100 items-center justify-center">
+            <View style={{ width: "100%", height: 126 }} className="bg-gray-100 items-center justify-center">
               <Ionicons name="image-outline" size={18} color="#9ca3af" />
             </View>
           )}
@@ -281,27 +280,38 @@ export default function SuggestApartments() {
   }
 
   return (
-    <View className="flex-1 mt-20 bg-[#f7f9fc]">
+    <View className="flex-1 mt-0 bg-[#f7f9fc]">
       {/* Header */}
-      <View className={`${Platform.OS === "android" ? "pt-8" : "pt-12"} pb-3 px-4 bg-white border-b border-gray-100`}>
-        <View className="flex-row items-center justify-between mb-2">
-          <TouchableOpacity onPress={() => navigation.goBack()} className="px-3 py-2 rounded-xl bg-gray-100 border border-gray-200" activeOpacity={0.9}>
+      <View
+        className={`${Platform.OS === "android" ? "pt-8" : "pt-12"} pb-3 px-4 bg-white border-b border-gray-100`}
+        style={{ paddingBottom: 10 }}
+      >
+        <View className="flex-row items-center justify-between">
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            className="rounded-xl"
+            style={{ paddingHorizontal: 12, paddingVertical: 8, backgroundColor: "#F3F4F6", borderWidth: 1, borderColor: "#E5E7EB" }}
+            activeOpacity={0.9}
+          >
             <Ionicons name="arrow-back" size={18} color="#111827" />
           </TouchableOpacity>
+
           <Text className="text-lg font-extrabold text-gray-900">Suggested</Text>
+
+          {/* Spacer to center title */}
           <View style={{ width: 40 }} />
         </View>
 
         {/* Search */}
         <View
-          className="flex-row items-center"
+          className="flex-row items-center mt-3"
           style={{
-            backgroundColor: "#f1f5f9",
+            backgroundColor: "#F8FAFC",
             borderRadius: 14,
             paddingHorizontal: 10,
             paddingVertical: Platform.OS === "android" ? 6 : 8,
             borderWidth: 1,
-            borderColor: "#e5e7eb",
+            borderColor: "#E5E7EB",
           }}
         >
           <Ionicons name="search" size={18} color="#6b7280" />
@@ -310,7 +320,7 @@ export default function SuggestApartments() {
             onChangeText={onSearchChange}
             placeholder="Search properties, locations…"
             className="flex-1 ml-2"
-            style={{ fontSize: 14 }}
+            style={{ fontSize: 14, paddingVertical: Platform.OS === "android" ? 2 : 4 }}
             returnKeyType="search"
           />
           {search ? (
@@ -320,6 +330,7 @@ export default function SuggestApartments() {
                 setItems([]);
                 fetchPage(1, true).then(() => setPage(1));
               }}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
             >
               <Ionicons name="close-circle" size={18} color="#9ca3af" />
             </TouchableOpacity>
@@ -327,7 +338,10 @@ export default function SuggestApartments() {
         </View>
 
         {/* Sentiment / Rating / Reviews chips */}
-        <View className="mt-2" style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center" }}>
+        <View
+          className="mt-2"
+          style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center" }}
+        >
           {/* Sentiment */}
           {SENTIMENT.map(opt => (
             <Chip
@@ -379,7 +393,7 @@ export default function SuggestApartments() {
           renderItem={renderItem}
           numColumns={2}
           columnWrapperStyle={{ justifyContent: "space-between", paddingHorizontal: 12 }}
-          contentContainerStyle={{ paddingTop: 10, paddingBottom: 16 }}
+          contentContainerStyle={{ paddingTop: 10, paddingBottom: 18 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           onEndReachedThreshold={0.3}
           onEndReached={loadMore}

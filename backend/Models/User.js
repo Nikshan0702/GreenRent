@@ -41,7 +41,10 @@ const UserSchema = new mongoose.Schema({
     emailVerified: { 
         type: Boolean, 
         default: false 
-    }
+    },
+    // Saved properties (for wishlist and compare)
+    wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: "GreenRentProperty", default: [] }],
+    compare: [{ type: mongoose.Schema.Types.ObjectId, ref: "GreenRentProperty", default: [] }]
 }, { 
     timestamps: true 
 });

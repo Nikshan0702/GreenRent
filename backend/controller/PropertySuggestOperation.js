@@ -10,6 +10,9 @@ import authenticateUser from "../middleware/authenticateUser.js";
 const router = express.Router();
 
 
+
+
+
 router.get("/locationsuggestions", async (req, res) => {
   try {
     const lat = Number(req.query.lat);

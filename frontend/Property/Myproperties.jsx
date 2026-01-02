@@ -4,13 +4,13 @@
 //   ActivityIndicator, RefreshControl, Alert, Platform, TextInput
 // } from 'react-native';
 // import AsyncStorage from '@react-native-async-storage/async-storage';
-// import { useNavigation } from '@react-navigation/native';
+// import { useNavigation, useFocusEffect } from '@react-navigation/native';
 // import { Ionicons } from '@expo/vector-icons';
+// import { API_BASE }from '../config/api.js';
 
-// const API_BASE = Platform.OS === 'ios' ? 'http://localhost:4000' : 'http://10.0.2.2:4000';
+// // const API_BASE = Platform.OS === 'ios' ? 'http://localhost:4000' : 'http://10.0.2.2:4000';
 // const OWNER_URL = (ownerId, page, limit) =>
 //   `${API_BASE}/PropertyOperations/owner/${ownerId}?page=${page}&limit=${limit}`;
-// const GREEN = '#3cc172';
 
 // const ensureAbsolute = (uri) => {
 //   if (!uri) return uri;
@@ -22,6 +22,14 @@
 //   if (n === null || n === undefined || isNaN(Number(n))) return '-';
 //   return new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR', maximumFractionDigits: 0 })
 //     .format(Number(n));
+// };
+
+// const BADGE_COLORS = {
+//   Platinum:  { bg: '#ecfeff', text: '#0e7490', border: '#a5f3fc' },
+//   Gold:      { bg: '#fef9c3', text: '#a16207', border: '#fde68a' },
+//   Silver:    { bg: '#f1f5f9', text: '#475569', border: '#cbd5e1' },
+//   Bronze:    { bg: '#fff7ed', text: '#9a3412', border: '#fed7aa' },
+//   Unverified:{ bg: '#f3f4f6', text: '#6b7280', border: '#e5e7eb' },
 // };
 
 // export default function Myproperties() {
@@ -38,7 +46,12 @@
 //   const [search, setSearch] = useState('');
 //   const LIMIT = 12;
 
-//   // --- helpers ---
+
+//   useEffect(() => {
+//     console.log("[API_BASE]", API_BASE);
+//   }, []);
+
+
 //   const clearSessionAndRedirect = useCallback(async (message = 'Session expired. Please sign in again.') => {
 //     try {
 //       await AsyncStorage.multiRemove(['auth_user', 'auth_token', 'token', 'user']);
@@ -49,7 +62,6 @@
 //   }, [navigation]);
 
 //   const loadSession = useCallback(async () => {
-//     // Robustly read saved session (supports different key names)
 //     const [[, userStr], [, tokenStr], [, tokenAlt], [, userAlt]] = await AsyncStorage.multiGet(
 //       ['auth_user', 'auth_token', 'token', 'user']
 //     );
@@ -67,7 +79,7 @@
 //     return { id: String(id), token: rawToken };
 //   }, [clearSessionAndRedirect]);
 
-//   // load auth info once
+//   // load auth once
 //   useEffect(() => {
 //     (async () => {
 //       const { id, token } = await loadSession();
@@ -85,14 +97,10 @@
 //     });
 
 //     if (res.status === 401 || res.status === 403) {
-//       // Token invalid/expired OR ownerId mismatch w/ token userId
 //       await clearSessionAndRedirect('Your session is not valid for this account. Please sign in again.');
 //       return;
 //     }
-
-//     if (!res.ok) {
-//       throw new Error(`HTTP ${res.status}`);
-//     }
+//     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
 //     const data = await res.json();
 //     const list = Array.isArray(data?.data) ? data.data : [];
@@ -100,7 +108,7 @@
 //     setItems((prev) => (replace ? list : [...prev, ...list]));
 //   }, [ownerId, token, clearSessionAndRedirect]);
 
-//   // initial load
+//   // initial load when ownerId/token available
 //   useEffect(() => {
 //     let mounted = true;
 //     (async () => {
@@ -144,7 +152,13 @@
 //     }
 //   }, [loadingMore, loading, page, pages, fetchPage]);
 
-//   // client-side filter
+//   // refresh when screen gains focus (e.g., after AddCertificate -> back)
+//   useFocusEffect(
+//     useCallback(() => {
+//       if (ownerId && token) onRefresh();
+//     }, [ownerId, token, onRefresh])
+//   );
+
 //   const filtered = useMemo(() => {
 //     if (!search.trim()) return items;
 //     const q = search.trim().toLowerCase();
@@ -159,6 +173,8 @@
 //   const renderItem = useCallback(({ item }) => {
 //     const firstImg = item?.images?.[0];
 //     const imgUri = ensureAbsolute(firstImg?.url || firstImg?.uri || firstImg);
+//     const badge = item?.ecoBadge || 'Unverified';
+//     const palette = BADGE_COLORS[badge] || BADGE_COLORS.Unverified;
 
 //     return (
 //       <TouchableOpacity
@@ -181,14 +197,35 @@
 //           })
 //         }
 //       >
-//         {imgUri ? (
-//           <Image source={{ uri: imgUri }} className="w-full" style={{ height: 120 }} resizeMode="cover" />
-//         ) : (
-//           <View className="w-full items-center justify-center bg-gray-100" style={{ height: 120 }}>
-//             <Ionicons name="image-outline" size={24} color="#9ca3af" />
-//             <Text className="text-gray-500 mt-1 text-xs">No image</Text>
+//         <View>
+//           {imgUri ? (
+//             <Image source={{ uri: imgUri }} className="w-full" style={{ height: 120 }} resizeMode="cover" />
+//           ) : (
+//             <View className="w-full items-center justify-center bg-gray-100" style={{ height: 120 }}>
+//               <Ionicons name="image-outline" size={24} color="#9ca3af" />
+//               <Text className="text-gray-500 mt-1 text-xs">No image</Text>
+//             </View>
+//           )}
+
+//           {/* ECO BADGE chip */}
+//           <View
+//             style={{
+//               position: 'absolute',
+//               top: 8,
+//               left: 8,
+//               backgroundColor: palette.bg,
+//               borderColor: palette.border,
+//               borderWidth: 1,
+//               borderRadius: 999,
+//               paddingHorizontal: 8,
+//               paddingVertical: 4,
+//             }}
+//           >
+//             <Text style={{ fontSize: 10, fontWeight: '700', color: palette.text }}>
+//               {badge}
+//             </Text>
 //           </View>
-//         )}
+//         </View>
 
 //         <View className="p-3">
 //           <Text className="text-[15px] font-semibold text-gray-900" numberOfLines={1}>
@@ -211,21 +248,29 @@
 //             </View>
 //           </View>
 
-//           {/* Add Certificate button */}
+//           {/* Add/Update Certificate */}
 //           <TouchableOpacity
-//             onPress={() => navigation.navigate('AddCertificate', { propertyId: item._id })}
+//             onPress={() => navigation.navigate('AddCertificate', {
+//               propertyId: item._id,
+//               // optional optimistic update:
+//               onUpdated: (newBadge) => {
+//                 setItems((prev) => prev.map(p => p._id === item._id ? { ...p, ecoBadge: newBadge } : p));
+//               }
+//             })}
 //             activeOpacity={0.9}
 //             className="mt-3 px-3 py-2 rounded-xl bg-[#3cc172]"
 //           >
 //             <View className="flex-row items-center justify-center">
 //               <Ionicons name="document-text-outline" size={16} color="#fff" />
-//               <Text className="text-white font-semibold text-xs ml-2">Add Certificate</Text>
+//               <Text className="text-white font-semibold text-xs ml-2">
+//                 {badge === 'Unverified' ? 'Add Certificate' : 'Update Certificate'}
+//               </Text>
 //             </View>
 //           </TouchableOpacity>
 //         </View>
 //       </TouchableOpacity>
 //     );
-//   }, [navigation]);
+//   }, [navigation, setItems]);
 
 //   const Header = () => (
 //     <View className={`${Platform.OS === 'android' ? 'pt-8' : 'pt-3'} bg-white`}>
@@ -316,8 +361,6 @@
 //     </View>
 //   );
 // }
-
-
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View, Text, FlatList, Image, TouchableOpacity,
@@ -326,7 +369,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { API_BASE }from '../config/api.js';
+import { API_BASE } from '../config/api.js';
 
 // const API_BASE = Platform.OS === 'ios' ? 'http://localhost:4000' : 'http://10.0.2.2:4000';
 const OWNER_URL = (ownerId, page, limit) =>
@@ -366,11 +409,9 @@ export default function Myproperties() {
   const [search, setSearch] = useState('');
   const LIMIT = 12;
 
-
   useEffect(() => {
     console.log("[API_BASE]", API_BASE);
   }, []);
-
 
   const clearSessionAndRedirect = useCallback(async (message = 'Session expired. Please sign in again.') => {
     try {
@@ -500,7 +541,15 @@ export default function Myproperties() {
       <TouchableOpacity
         activeOpacity={0.9}
         className="bg-white rounded-2xl overflow-hidden border border-gray-100"
-        style={{ width: '48%', marginBottom: 14 }}
+        style={{
+          width: '48%',
+          marginBottom: 16,
+          shadowColor: '#000',
+          shadowOpacity: 0.05,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 2 },
+          elevation: 2
+        }}
         onPress={() =>
           navigation.navigate('PropertyDetailsScreen', {
             propertyId: item._id,
@@ -517,11 +566,11 @@ export default function Myproperties() {
           })
         }
       >
-        <View>
+        <View style={{ position: 'relative' }}>
           {imgUri ? (
-            <Image source={{ uri: imgUri }} className="w-full" style={{ height: 120 }} resizeMode="cover" />
+            <Image source={{ uri: imgUri }} className="w-full" style={{ height: 130, backgroundColor: '#F3F4F6' }} resizeMode="cover" />
           ) : (
-            <View className="w-full items-center justify-center bg-gray-100" style={{ height: 120 }}>
+            <View className="w-full items-center justify-center bg-gray-100" style={{ height: 130 }}>
               <Ionicons name="image-outline" size={24} color="#9ca3af" />
               <Text className="text-gray-500 mt-1 text-xs">No image</Text>
             </View>
@@ -539,6 +588,10 @@ export default function Myproperties() {
               borderRadius: 999,
               paddingHorizontal: 8,
               paddingVertical: 4,
+              shadowColor: '#000',
+              shadowOpacity: 0.06,
+              shadowRadius: 4,
+              shadowOffset: { width: 0, height: 1 },
             }}
           >
             <Text style={{ fontSize: 10, fontWeight: '700', color: palette.text }}>
@@ -594,30 +647,45 @@ export default function Myproperties() {
 
   const Header = () => (
     <View className={`${Platform.OS === 'android' ? 'pt-8' : 'pt-3'} bg-white`}>
-      <View className="flex-row mt-10 items-center justify-between px-4 py-3">
+      <View className="flex-row items-center justify-between px-4" style={{ paddingTop: 14, paddingBottom: 10 }}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          className="p-2 rounded-xl bg-gray-50 border border-gray-200"
-          activeOpacity={0.8}
+          className="rounded-xl"
+          style={{ paddingHorizontal: 10, paddingVertical: 8, backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB' }}
+          activeOpacity={0.9}
         >
           <Ionicons name="arrow-back" size={20} color="#111827" />
         </TouchableOpacity>
+
         <Text className="text-xl font-bold text-gray-900">My Properties</Text>
+
+        {/* spacer to keep title perfectly centered */}
         <View style={{ width: 40 }} />
       </View>
 
       {/* Search Bar */}
-      <View className="flex-row items-center mx-4 mb-3 px-3 py-2 rounded-xl bg-gray-100">
+      <View
+        className="flex-row items-center mx-4 mb-3"
+        style={{
+          backgroundColor: '#F8FAFC',
+          borderRadius: 14,
+          paddingHorizontal: 10,
+          paddingVertical: Platform.OS === 'android' ? 6 : 8,
+          borderWidth: 1,
+          borderColor: '#E5E7EB',
+        }}
+      >
         <Ionicons name="search" size={18} color="#6b7280" />
         <TextInput
           placeholder="Search my properties..."
           value={search}
           onChangeText={setSearch}
           className="flex-1 ml-2 text-gray-800"
+          style={{ fontSize: 14, paddingVertical: Platform.OS === 'android' ? 2 : 4 }}
           returnKeyType="search"
         />
         {search.length > 0 && (
-          <TouchableOpacity onPress={() => setSearch('')}>
+          <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
             <Ionicons name="close-circle" size={18} color="#9ca3af" />
           </TouchableOpacity>
         )}
