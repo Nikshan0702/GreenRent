@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
 import UserModel from '../Models/User.js';
+import Property from '../Models/Property.js';
 import authenticateUser from '../middleware/authenticateUser.js';
 
 const router = express.Router();
@@ -355,4 +356,52 @@ router.delete('/deleteUser/:id', authenticateUser, async (req, res) => {
   }
 });
 
+
+// use the imported authenticateUser
+router.get('/wishlist', authenticateUser, async (req, res) => {
+  const user = await UserModel.findById(req.user.id).select('wishlist').populate('wishlist');
+  res.json({ success: true, data: user?.wishlist || [] });
+});
+
+router.post('/wishlist/:pid', authenticateUser, async (req, res) => {
+  const { pid } = req.params;
+  await Property.exists({ _id: pid });
+  const user = await UserModel.findById(req.user.id).select('wishlist');
+  if (!user.wishlist.includes(pid)) user.wishlist.push(pid);
+  await user.save();
+  res.json({ success: true, ids: user.wishlist });
+});
+
+router.delete('/wishlist/:pid', authenticateUser, async (req, res) => {
+  const { pid } = req.params;
+  const user = await UserModel.findById(req.user.id).select('wishlist');
+  user.wishlist = user.wishlist.filter(id => String(id) !== String(pid));
+  await user.save();
+  res.json({ success: true, ids: user.wishlist });
+});
+
+router.get('/compare', authenticateUser, async (req, res) => {
+  const user = await UserModel.findById(req.user.id).select('compare').populate('compare');
+  res.json({ success: true, data: user?.compare || [] });
+});
+
+router.post('/compare/:pid', authenticateUser, async (req, res) => {
+  const { pid } = req.params;
+  await Property.exists({ _id: pid });
+  const user = await UserModel.findById(req.user.id).select('compare');
+  if (!user.compare.includes(pid)) {
+    if (user.compare.length >= 4) return res.status(400).json({ success: false, message: 'Compare limit is 4' });
+    user.compare.push(pid);
+  }
+  await user.save();
+  res.json({ success: true, ids: user.compare });
+});
+
+router.delete('/compare/:pid', authenticateUser, async (req, res) => {
+  const { pid } = req.params;
+  const user = await UserModel.findById(req.user.id).select('compare');
+  user.compare = user.compare.filter(id => String(id) !== String(pid));
+  await user.save();
+  res.json({ success: true, ids: user.compare });
+});
 export default router;
